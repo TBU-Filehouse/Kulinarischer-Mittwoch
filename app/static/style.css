@@ -193,3 +193,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex="0"]:focus
 .registration-list li[data-registration-status="waitlisted"] .registration-name { font-weight: 400; }
 .portions-form, .cancel-form { margin-top: 1rem; }
 .cancel-form textarea, .portions-form input { max-width: 100%; box-sizing: border-box; }
+
+/* KANN C1-C3: calendar export, recipe, ratings */
+.ics-link, .recipe-link { margin: .5rem 0 0; }
+.recipe-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rating-summary { font-weight: 700; margin: .25rem 0; }
+.rating-list { margin: .5rem 0 0; padding-left: 1.25rem; }
+.rating-list li { padding-block: .25rem; overflow-wrap: anywhere; }
+.rating-stars { color: #754719; margin-inline: .4rem; letter-spacing: .08em; }
+.rating-comment { display: block; color: var(--muted); font-size: .93rem; }
+.recipe-form textarea { max-width: 100%; box-sizing: border-box; }

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Rezept {{ date_heading }} · Der kulinarische Mittwoch{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('calendar.wednesday_detail', day_value=day_value) }}">← Zum Mittwoch</a>
+  <section class="detail-hero" aria-labelledby="page-title">
+    <p class="eyebrow">Rezept</p>
+    <h1 id="page-title">{{ dish_title or 'Gericht' }}</h1>
+    <p class="muted">{{ date_heading }}</p>
+  </section>
+  <section class="info-card recipe-card" aria-labelledby="recipe-heading">
+    <h2 id="recipe-heading">Zubereitung</h2>
+    <div id="recipe-body" class="recipe-body">{{ recipe_text }}</div>
+  </section>
+{% endblock %}
