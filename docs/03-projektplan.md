@@ -105,3 +105,7 @@ Nächster Bauauftrag AP4: Koch-Ein-/Austragen und Gerichtformular; Regeln mit DB
 ## Fortschritt — 22.10.2026, nach AP4
 AP4 umgesetzt und unabhängig geprüft. 33 neue Schreib-/Sicherheitstests, eine Harness-Unicode-Regression und sieben neue Browserfälle ergeben insgesamt 139 Tests (124 Logik/HTTP, 15 Chromium). [Nachweis](10-ap4-qs-e2e.md).
 Nächster Bauauftrag AP5: Essen-An-/Abmeldung mit Ernährungsform und optionalem Hinweis; Namen, Frist, CSRF und Transaktionen wiederverwenden. E2E für Anmeldung, Anzeige, Abmeldung, Duplikate und direkte POST-Sperre ergänzen. AP6 Einkauf folgt danach; MS2 noch offen. M2/M3 sind technisch belegt, gesamte Fachabnahme bleibt getrennt.
+
+## Fortschritt — 22.10.2026, nach AP5
+AP5 umgesetzt: Essen-An-/Abmeldung, Doppelnamensperre und Fristsperre für direkte POSTs. 30 neue Logik-/HTTP- und 6 neue Chromium-Fälle; insgesamt 175 Tests (154 Logik/HTTP, 21 Chromium). [Nachweis](11-ap5-qs-e2e.md).
+Nächster Bauauftrag AP6: Einkaufsansicht GET /wednesdays/{date}/shopping mit Gesamtzahl, disjunkten Ernährungszahlen und Hinweisliste mit Namen; Gegenprobe 2 alles + 1 vegetarisch + 1 vegan = 4, Koch ohne Anmeldung zählt nicht. Danach MS2 MUSS-Durchstich im Browser.

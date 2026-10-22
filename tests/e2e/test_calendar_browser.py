@@ -68,7 +68,7 @@ def test_summaries_details_and_read_only_status(page,e2e_url):
     expect(page.get_by_text('Anna Beispiel',exact=True)).to_be_visible()
     expect(page.get_by_text('Ben Muster',exact=True)).to_be_visible()
     expect(page.locator('.description')).to_have_text('Mit Reis und frischen Kräutern')
-    expect(page.locator('form[action$="/registrations"]')).to_have_count(0)
+    expect(page.locator('.registration-list')).to_contain_text('Cora Demo')  # AP5 lists persisted registrations.
     expect(page.locator('.count-number')).to_have_text('3')
     ARTIFACTS.mkdir(exist_ok=True)
     page.screenshot(path=str(ARTIFACTS/'ap3-detail.png'),full_page=True)

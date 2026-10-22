@@ -46,3 +46,6 @@ Monatskalender/Details mit echten Chromium-E2E geprüft: Jahreswechsel,Schaltjah
 
 ## AP4-Teilnachweis — 22.10.2026
 M2/M3 technisch durch echte Formulare, Browserläufe und Transaktions-/Race-/Fristprüfungen nachgewiesen. 139 Tests insgesamt. Vollständige Selbst-/Fachabnahme bleibt separat offen; Essensanmeldung und Einkauf sind noch nicht gebaut. Nachweis: docs/10-ap4-qs-e2e.md.
+
+## AP5 technisch — 22.10.2026
+A-M4/A-M5/A-M6 sind für Essensanmeldungen automatisiert belegt (docs/11-ap5-qs-e2e.md, 175 Tests grün). Die Haken bleiben offen, bis eine prüfende Person die Fälle in der laufenden App durchgeht und Ergebnis/Zeitpunkt einträgt.

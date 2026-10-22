@@ -1,7 +1,7 @@
 # Der kulinarische Mittwoch
 Lokale Hackathon-WebApp zur Organisation des gemeinsamen Mittwochsessens.
 
-**Stand 22.10.2026: AP1 bis AP4 umgesetzt und technisch geprüft.** Flask-Grundgerüst und SQLite-Persistenz stehen. Monatskalender, Mittwoch-Details, Koch-Ein-/Austragen und Gerichtformulare stehen. Essen-Anmeldung und Einkaufsübersicht folgen ab AP5; die vollständige Produktabnahme ist offen.
+**Stand 22.10.2026: AP1 bis AP5 umgesetzt und technisch geprüft.** Flask-Grundgerüst und SQLite-Persistenz stehen. Monatskalender, Mittwoch-Details, Koch-Ein-/Austragen, Gerichtformulare und Essen-An-/Abmeldung stehen. Die Einkaufsübersicht folgt mit AP6; die vollständige Produktabnahme ist offen.
 
 ## Start unter Windows
 Voraussetzung: Python mit pip; geprüft mit Python 3.14.7. Internet wird für die erstmalige Installation benötigt. Aus diesem Projektordner:
@@ -21,7 +21,7 @@ Nach einmaliger Installation der Entwicklungsabhängigkeiten und des Testbrowser
 .\.venv\Scripts\python.exe -m playwright install chromium
 .\.venv\Scripts\python.exe scripts/check.py
 ```
-Der Check prüft Abhängigkeiten, Logik/HTTP und Chromium-E2E als getrennte Stufen, liefert Exit 1 bei Fehlern und schreibt .harness/result.json mit Quellstand-Hash vorher/nachher. **Technischer Erfolg ist keine Produktabnahme.** 139 Tests prüfen AP1 bis AP4, darunter 15 echte Chromium-E2E-Fälle. Datenbanktests nutzen ausschließlich temporäre Datenbanken, darunter einen echten Serverneustart; die Fachregeln werden ohne Datenbank mit vorgegebenen Zeitpunkten geprüft. Die normale data/app.db wird dabei nicht beschrieben.
+Der Check prüft Abhängigkeiten, Logik/HTTP und Chromium-E2E als getrennte Stufen, liefert Exit 1 bei Fehlern und schreibt .harness/result.json mit Quellstand-Hash vorher/nachher. **Technischer Erfolg ist keine Produktabnahme.** 175 Tests prüfen AP1 bis AP5, darunter 21 echte Chromium-E2E-Fälle. Datenbanktests nutzen ausschließlich temporäre Datenbanken, darunter einen echten Serverneustart; die Fachregeln werden ohne Datenbank mit vorgegebenen Zeitpunkten geprüft. Die normale data/app.db wird dabei nicht beschrieben.
 Details und Grenzen: [AP1-QS-Nachweis](docs/07-ap1-qs.md) und [AP2-QS-Nachweis](docs/08-ap2-qs.md) sowie [AP3 mit E2E](docs/09-ap3-qs-e2e.md). Die Claude-/Codex-Hookdiagnose bleibt wie besprochen zurückgestellt; der lokale Check ist jetzt tatsächlich eingerichtet.
 
 ## Planung und Dokumentation
@@ -36,14 +36,14 @@ Details und Grenzen: [AP1-QS-Nachweis](docs/07-ap1-qs.md) und [AP2-QS-Nachweis](
 
 [ADR-001 Stack](docs/adr/ADR-001-lokaler-stack.md) · [ADR-002 Köche](docs/adr/ADR-002-koeche-als-esser.md) · [ADR-003 Absage](docs/adr/ADR-003-absage.md) · [ADR-004 Namen](docs/adr/ADR-004-namensvetter.md) · [ADR-005 Frist](docs/adr/ADR-005-frist.md)
 
-Nächster Bauabschnitt: AP5, Essen-An-/Abmeldung mit Ernährungsform und optionalem Hinweis.
+[AP5-QS-Nachweis](docs/11-ap5-qs-e2e.md): Essen-An-/Abmeldung mit Ernährungsform und optionalem Hinweis, 154 Logik-/HTTP- plus 21 Chromium-Fälle. Nächster Bauabschnitt: AP6, Einkaufsübersicht.
 
 
 ## E2E separat ausführen
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q tests/e2e --browser chromium --tracing retain-on-failure --screenshot only-on-failure --output test-results/e2e
 ```
-Der Testserver verwendet eine eigene temporäre Datenbank und feste Testzeit. Keine Zeitsteuerung oder Seed-Endpunkte in der normalen App. Berichte, Screenshots und Fehlertraces liegen unter test-results/. Die Browserprüfung deckt Kalender/Details und echte Koch-/Gericht-Schreibabläufe ab; Essensanmeldungen folgen mit AP5.
+Der Testserver verwendet eine eigene temporäre Datenbank und feste Testzeit. Keine Zeitsteuerung oder Seed-Endpunkte in der normalen App. Berichte, Screenshots und Fehlertraces liegen unter test-results/. Die Browserprüfung deckt Kalender/Details und echte Koch-/Gericht- und Essensanmelde-Schreibabläufe ab; die Einkaufsübersicht folgt mit AP6.
 
 ## AP4 und Formularschutz
 [AP4-QS-Nachweis](docs/10-ap4-qs-e2e.md): 124 Logik-/HTTP-Tests plus 15 Chromium-E2E-Fälle. Formularänderungen nutzen SQLite-Schreibtransaktionen, serverseitige Fristprüfung und Session-CSRF-Token. Nur Loopback-Hosts sind zugelassen; HTTP-Formulare sind auf 16 KiB begrenzt. Ohne KUMI_SECRET_KEY entsteht beim App-Neustart ein neuer zufälliger Sitzungsschlüssel: alte Formulare dann neu laden. Daten bleiben erhalten. Dies fügt keinen Login hinzu.

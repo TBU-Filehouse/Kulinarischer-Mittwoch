@@ -57,3 +57,6 @@ M2/M3 technisch nachgewiesen, Gesamtproduktabnahme offen. Nächster Bauabschnitt
 
 ## Repository-Ziel — 22.10.2026
 Auf Nutzerwunsch liegt die Fortschrittssicherung nun im privaten Repository TBU-Filehouse/Kulinarischer-Mittwoch. Origin ist entsprechend gesetzt. Das zuvor bereitgestellte Repository tib019/Kulinarischer-Mittwoch bleibt unverändert. Lokale Daten, Testartefakte und Sitzungskontext bleiben ausgeschlossen.
+
+## Umsetzungsstand AP5 — 22.10.2026
+Essen-An-/Abmeldung mit Ernährungsform und optionalem Hinweis gebaut; Namensvergleich trim+casefold, UNIQUE gegen Rennen, Frist für An- und Abmeldung serverseitig. Abmeldung löscht den Datensatz (Must-Ausbau). 175 Tests: 154 Logik/HTTP, 21 Chromium. Nachweis docs/11-ap5-qs-e2e.md. M4/M5/M6 technisch belegt, Gesamtproduktabnahme offen. Nächster Bauabschnitt AP6 Einkaufsübersicht.

@@ -12,7 +12,7 @@
     {% for message in messages %}<p class="success-message" role="status">{{ message }}</p>{% endfor %}
   {% endwith %}
   {% if error_message %}<p class="form-error" role="alert">{{ error_message }}</p>{% endif %}
-  {% if locked %}<p class="closed-note" role="status">Die Frist ist geschlossen. Koch- und Gerichtsdaten bleiben lesbar.</p>{% endif %}
+  {% if locked %}<p class="closed-note" role="status">Die Frist ist geschlossen. Koch-, Gerichts- und Anmeldedaten bleiben lesbar; An- und Abmeldungen sind gesperrt.</p>{% endif %}
 
   <div class="detail-grid">
     <section class="info-card dish-card" aria-labelledby="dish-heading">
@@ -78,6 +78,40 @@
       <h2 id="registrations-heading">Essen-Anmeldungen</h2>
       <p class="count-number">{{ registration_count }}</p>
       <p class="muted">{{ 'Person' if registration_count == 1 else 'Personen' }} angemeldet</p>
+      {% if registration_entries %}
+        <ul class="registration-list">
+          {% for entry in registration_entries %}
+            <li>
+              <span class="registration-name">{{ entry.display_name }}</span>
+              <span class="registration-diet">{{ entry.diet_label }}</span>
+              {% if entry.note %}<span class="registration-note">Hinweis: {{ entry.note }}</span>{% endif %}
+              {% if not locked %}
+                <form class="inline-form" method="post" action="{{ url_for('calendar.remove_registration', day_value=day_value, registration_id=entry.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="secondary-button" type="submit" aria-label="{{ entry.display_name }} vom Essen abmelden">Abmelden</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if not locked %}
+        <form class="write-form registration-form" method="post" action="{{ url_for('calendar.add_registration', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="registration-name">Name für das Essen</label>
+          <input id="registration-name" name="name" type="text" maxlength="80" required value="{{ form_registration_name or '' }}">
+          <label for="registration-diet">Ernährungsform</label>
+          <select id="registration-diet" name="diet" required>
+            <option value="" disabled {{ 'selected' if not selected_diet else '' }}>Bitte wählen</option>
+            {% for value, label in diets.items() %}
+              <option value="{{ value }}" {{ 'selected' if selected_diet == value else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <label for="registration-note">Allergien/Hinweis (optional)</label>
+          <textarea id="registration-note" name="note" maxlength="1000" rows="2">{{ form_note or '' }}</textarea>
+          <button type="submit">Zum Essen anmelden</button>
+        </form>
+      {% endif %}
     </section>
 
     <section class="info-card deadline-card" aria-labelledby="deadline-heading">
@@ -86,5 +120,4 @@
       <p class="muted">Zeitzone: Europe/Berlin</p>
     </section>
   </div>
-  <p class="next-step-note">Essen-Anmeldung folgt im nächsten Schritt.</p>
 {% endblock %}

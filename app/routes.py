@@ -36,6 +36,11 @@ _DISH_TYPES = {
     "vegetarisch": "Vegetarisch",
     "fleisch_fisch": "Fleisch oder Fisch",
 }
+_DIETS = {
+    "alles": "Isst alles",
+    "vegetarisch": "Vegetarisch",
+    "vegan": "Vegan",
+}
 
 
 def _local_now():
@@ -86,6 +91,14 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
         cook_entries=details["cook_entries"],
         form_cook_name=values.get("name", ""),
         registration_count=details["registration_count"],
+        registration_entries=[
+            {**entry, "diet_label": _DIETS[entry["diet"]]}
+            for entry in details["registration_entries"]
+        ],
+        diets=_DIETS,
+        form_registration_name=values.get("registration_name", ""),
+        selected_diet=values.get("diet", ""),
+        form_note=values.get("note", ""),
         csrf_token=get_csrf_token(),
         error_message=error_message,
         deadline_heading=(
@@ -242,6 +255,49 @@ def remove_cook(day_value: str, cook_id: int):
     except (InvalidInputError, RegistrationClosedError, NotFoundError) as exc:
         return _write_error(day, exc)
     flash("Der Koch wurde ausgetragen.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/registrations")
+def add_registration(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {
+        "registration_name": request.form.get("name", ""),
+        "diet": request.form.get("diet", ""),
+        "note": request.form.get("note", ""),
+    }
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).add_registration(
+            day, values["registration_name"], values["diet"], values["note"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, DuplicateNameError, RegistrationClosedError) as exc:
+        return _write_error(day, exc, values)
+    flash("Die Essen-Anmeldung wurde gespeichert.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/registrations/<int:registration_id>/remove")
+def remove_registration(day_value: str, registration_id: int):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).remove_registration(
+            day, registration_id
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, RegistrationClosedError, NotFoundError) as exc:
+        return _write_error(day, exc)
+    flash("Die Essen-Anmeldung wurde entfernt.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
 
 

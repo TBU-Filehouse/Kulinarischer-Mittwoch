@@ -55,3 +55,8 @@ Nutzer stellte https://github.com/tib019/Kulinarischer-Mittwoch bereit. Reposito
 
 ## Repository-Ziel gewechselt — 22.10.2026
 Nutzer bat wegen fehlender Schreibrechte bei tib019 um TBU-Filehouse. Privates Repository TBU-Filehouse/Kulinarischer-Mittwoch erstellt und lokale Origin-URL umgestellt. Erster gesicherter Code-Stand bleibt AP4 mit 139 Tests; vor dem Push wird der QS-Bericht nach diesen Dokumentänderungen erneuert.
+
+## AP5 — 22.10.2026
+Neue Sitzung (Claude Code) auf Nutzerauftrag „weitermachen am besten bei ap5“. Superpowers TDD und Verifikation angewendet; 25 HTTP-/Service-Tests (später 30) zuerst geschrieben und rot gesehen, dann Service, Routen und Formular gebaut. Sechs Chromium-Fälle nach der Implementierung ergänzt (kein Test-zuerst-Nachweis).
+Gesamtharness fand eine alte AP3-Erwartung „kein Anmeldeformular“; als überholte Bereichsgrenze erkannt und durch Listenprüfung ersetzt. Playwright-Chromium fehlte im Benutzerprofil und wurde per dokumentiertem Befehl nachinstalliert. 175 Tests grün (154+21). Unabhängiges Review durch günstigeres Modell beauftragt. Kein Commit/Push, keine Hooks/Settings verändert. Nächster Bauabschnitt AP6.
+Review (Sonnet, read-only): keine kritischen/hohen Befunde. Zwei LOW-Befunde mit rotem Test zuerst korrigiert (Doppelnamenmeldung, CRLF im Hinweis), drei Lückentests ergänzt; zwei LOW-Punkte begründet offen (siehe docs/11-ap5-qs-e2e.md).

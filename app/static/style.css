@@ -117,7 +117,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex="0"]:focus
 .closed-note { background: #f3e9dc; color: #754719; }
 .count-number { margin: .05rem 0; color: var(--green); font-size: 2.5rem; font-weight: 750; line-height: 1.15; }
 .deadline-time { margin: 0; font-weight: 700; }
-.next-step-note { margin-top: 1.25rem; color: var(--muted); font-size: .93rem; }
+.registration-list { margin: .75rem 0 0; padding-left: 1.25rem; }
+.registration-list li { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem .6rem; padding-block: .3rem; }
+.registration-name { font-weight: 700; }
+.registration-diet { border-radius: 999px; padding: .05rem .5rem; background: #e4f1e6; color: var(--green-deep); font-size: .88rem; }
+.registration-note { flex-basis: 100%; color: var(--muted); font-size: .93rem; overflow-wrap: anywhere; }
+.registration-list .inline-form { margin-left: auto; }
 .error-card { padding: 1.6rem; }
 .error-card p { margin-bottom: 1.2rem; }
 .button-link { display: inline-block; border-radius: 9px; padding: .6rem .9rem; }

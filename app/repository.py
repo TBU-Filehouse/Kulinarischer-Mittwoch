@@ -87,6 +87,10 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
         registration_count = connection.execute(
             "SELECT COUNT(*) FROM registration WHERE date = ?", (day,)
         ).fetchone()[0]
+        registration_entries = connection.execute(
+            "SELECT id, display_name, diet, note FROM registration WHERE date = ? ORDER BY created_at, id",
+            (day,),
+        ).fetchall()
         return {
             "dish_title": wednesday["dish_title"] if wednesday else None,
             "dish_description": wednesday["dish_description"] if wednesday else None,
@@ -97,6 +101,7 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
                 for row in cook_entries
             ],
             "registration_count": registration_count,
+            "registration_entries": [dict(row) for row in registration_entries],
         }
     finally:
         connection.close()
