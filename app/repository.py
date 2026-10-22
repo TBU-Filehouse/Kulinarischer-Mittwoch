@@ -117,6 +117,10 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
                FROM budget_approval WHERE date = ?""",
             (day,),
         ).fetchone()
+        recipe = connection.execute("SELECT text FROM recipe WHERE date = ?", (day,)).fetchone()
+        rating_entries = connection.execute(
+            "SELECT id, display_name, stars, comment FROM rating WHERE date = ? ORDER BY id", (day,)
+        ).fetchall()
         entries = [dict(row) for row in registration_entries]
         waitlist_position = 0
         for index, entry in enumerate(entries):
@@ -145,6 +149,8 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
             "expense_entries": [dict(row) for row in expense_entries],
             "expense_total_cents": sum(row["amount_cents"] for row in expense_entries),
             "approval": dict(approval) if approval else None,
+            "recipe_text": recipe["text"] if recipe else None,
+            "rating_entries": [dict(row) for row in rating_entries],
         }
     finally:
         connection.close()

@@ -10,6 +10,7 @@
     {% else %}
       <span class="status-pill {{ 'closed' if locked else 'open' }}">{{ 'Anmeldung geschlossen' if locked else 'Anmeldung offen' }}</span>
     {% endif %}
+    <p class="ics-link"><a id="ics-link" href="{{ ics_url }}">Termin als .ics herunterladen</a></p>
   </section>
 
   {% with messages = get_flashed_messages(category_filter=['success']) %}
@@ -45,6 +46,15 @@
             <option value="fleisch_fisch" {{ 'selected' if selected_dish_type == 'fleisch_fisch' else '' }}>Fleisch oder Fisch</option>
           </select>
           <button type="submit">Gericht speichern</button>
+        </form>
+      {% endif %}
+      {% if has_recipe %}<p class="recipe-link"><a id="recipe-link" href="{{ recipe_url }}">Rezept ansehen</a></p>{% endif %}
+      {% if can_edit_recipe %}
+        <form class="write-form recipe-form" method="post" action="{{ recipe_url }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="recipe-text">Rezept {{ 'ändern' if has_recipe else 'anhängen' }} (Freitext, höchstens 4000 Zeichen)</label>
+          <textarea id="recipe-text" name="recipe" maxlength="4000" required rows="6">{{ form_recipe_text or '' }}</textarea>
+          <button type="submit">Rezept speichern</button>
         </form>
       {% endif %}
     </section>
@@ -205,6 +215,43 @@
       {% endif %}
       <p><a href="{{ report_url }}">Monatsreport ansehen</a></p>
     </section>
+
+    {% if show_ratings %}
+    <section class="info-card rating-card" aria-labelledby="rating-heading">
+      <h2 id="rating-heading">Bewertungen</h2>
+      <p id="rating-summary" class="rating-summary" data-count="{{ rating_summary.count }}">{{ rating_summary.label }}</p>
+      {% if rating_entries %}
+        <ul class="rating-list">
+          {% for entry in rating_entries %}
+            <li>
+              <span class="rating-name">{{ entry.display_name }}</span>
+              <span class="rating-stars" aria-label="{{ entry.stars }} von 5 Sternen">{{ '★' * entry.stars }}{{ '☆' * (5 - entry.stars) }}</span>
+              {% if entry.comment %}<span class="rating-comment">{{ entry.comment }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if can_rate %}
+        <form class="write-form rating-form" method="post" action="{{ url_for('calendar.add_rating', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="rating-name">Dein Name</label>
+          <input id="rating-name" name="name" type="text" maxlength="80" required value="{{ form_rating_name or '' }}">
+          <label for="rating-stars">Sterne</label>
+          <select id="rating-stars" name="stars" required>
+            <option value="" disabled {{ 'selected' if not selected_stars else '' }}>Bitte wählen</option>
+            {% for value in ['5', '4', '3', '2', '1'] %}
+              <option value="{{ value }}" {{ 'selected' if selected_stars == value else '' }}>{{ value }} {{ 'Stern' if value == '1' else 'Sterne' }}</option>
+            {% endfor %}
+          </select>
+          <label for="rating-comment">Kommentar (optional)</label>
+          <textarea id="rating-comment" name="comment" maxlength="500" rows="2">{{ form_rating_comment or '' }}</textarea>
+          <button type="submit">Gericht bewerten</button>
+        </form>
+      {% elif not cancelled %}
+        <p class="muted">Bewertungen sind ab dem Tag des Essens möglich.</p>
+      {% endif %}
+    </section>
+    {% endif %}
 
     {% if can_cancel %}
     <section class="info-card cancel-card" aria-labelledby="cancel-heading">

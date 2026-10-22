@@ -49,6 +49,10 @@ class PortionLimitError(RuleViolation):
     """The new portion limit would drop people who are already confirmed."""
 
 
+class RatingNotYetOpenError(RuleViolation):
+    """Ratings are possible from the day of the meal on, not before."""
+
+
 _BERLIN = ZoneInfo("Europe/Berlin")
 _LIMIT_PATTERN = re.compile(r"[0-9]{1,3}", re.ASCII)
 
@@ -427,6 +431,95 @@ class WednesdayService:
         except sqlite3.IntegrityError as exc:
             connection.rollback()
             raise InvalidInputError("Die Genehmigung konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def save_recipe(self, day: date, text: str) -> None:
+        """Attach or replace the free-text recipe of an existing dish (C3, ADR-010)."""
+        if not isinstance(text, str):
+            raise InvalidInputError("Das Rezept muss Text sein.")
+        # Browsers submit textarea line breaks as CRLF but count them as one character.
+        trimmed = text.replace("\r\n", "\n").strip()
+        if not 1 <= len(trimmed) <= 4000:
+            raise InvalidInputError("Das Rezept muss nach dem Kürzen 1 bis 4000 Zeichen haben.")
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            now = self.clock.now()
+            valid_day = validate_wednesday(day)
+            iso = valid_day.isoformat()
+            ensure_open(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
+            dish = connection.execute(
+                "SELECT dish_title FROM wednesday WHERE date = ?", (iso,)
+            ).fetchone()
+            if dish is None or not dish["dish_title"]:
+                raise InvalidInputError("Bitte zuerst das Gericht eintragen; das Rezept gehört zu einem Gericht.")
+            updated_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            connection.execute(
+                """INSERT INTO recipe(date, text, updated_at) VALUES(?, ?, ?)
+                   ON CONFLICT(date) DO UPDATE SET
+                     text = excluded.text, updated_at = excluded.updated_at""",
+                (iso, trimmed, updated_at),
+            )
+            connection.commit()
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise InvalidInputError("Das Rezept konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def add_rating(self, day: date, display_name: str, stars: str, comment: str | None) -> int:
+        """Rate the dish from the meal day on; one rating per name and Wednesday (C2, ADR-010)."""
+        normalized_name = normalize_name(display_name)
+        trimmed_name = display_name.strip()
+        if not isinstance(stars, str) or not re.fullmatch(r"[1-5]", stars, re.ASCII):
+            raise InvalidInputError("Bitte vergeben Sie 1 bis 5 Sterne.")
+        if comment is not None and not isinstance(comment, str):
+            raise InvalidInputError("Der Kommentar muss Text sein.")
+        trimmed_comment = (comment or "").replace("\r\n", "\n").strip() or None
+        if trimmed_comment is not None and len(trimmed_comment) > 500:
+            raise InvalidInputError("Der Kommentar darf nach dem Kürzen höchstens 500 Zeichen haben.")
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            now = self.clock.now()
+            valid_day = validate_wednesday(day)
+            iso = valid_day.isoformat()
+            _ensure_not_cancelled(connection, valid_day)
+            if valid_day > now.astimezone(_BERLIN).date():
+                raise RatingNotYetOpenError("Bewertungen sind erst ab dem Tag des Essens möglich.")
+            dish = connection.execute(
+                "SELECT dish_title FROM wednesday WHERE date = ?", (iso,)
+            ).fetchone()
+            if dish is None or not dish["dish_title"]:
+                raise InvalidInputError("Ohne eingetragenes Gericht kann nichts bewertet werden.")
+            existing = connection.execute(
+                "SELECT display_name FROM rating WHERE date = ? ORDER BY id", (iso,)
+            ).fetchall()
+            try:
+                ensure_name_available(trimmed_name, (row["display_name"] for row in existing))
+            except DuplicateNameError as exc:
+                raise DuplicateNameError("Dieser Name hat diesen Mittwoch bereits bewertet.") from exc
+            cursor = connection.execute(
+                """INSERT INTO rating(date, display_name, normalized_name, stars, comment)
+                   VALUES(?, ?, ?, ?, ?)""",
+                (iso, trimmed_name, normalized_name, int(stars), trimmed_comment),
+            )
+            rating_id = cursor.lastrowid
+            connection.commit()
+            return rating_id
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            if "UNIQUE constraint failed: rating" in str(exc):
+                raise DuplicateNameError("Dieser Name hat diesen Mittwoch bereits bewertet.") from exc
+            raise InvalidInputError("Die Bewertung konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
         except BaseException:
             connection.rollback()
             raise

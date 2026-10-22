@@ -54,3 +54,20 @@ CREATE TABLE IF NOT EXISTS cancellation (
     reason TEXT NOT NULL,
     cancelled_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS recipe (
+    date TEXT PRIMARY KEY NOT NULL REFERENCES wednesday(date),
+    text TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rating (
+    id INTEGER PRIMARY KEY,
+    date TEXT NOT NULL REFERENCES wednesday(date),
+    display_name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
+    stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    UNIQUE (date, normalized_name)
+);

@@ -5,7 +5,7 @@ import csv
 import io
 import re
 import sqlite3
-from datetime import date
+from datetime import date, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from flask import Blueprint, Response, current_app, flash, redirect, render_template, request, url_for
@@ -27,6 +27,7 @@ from .services import (
     NotFoundError,
     PastWednesdayError,
     PortionLimitError,
+    RatingNotYetOpenError,
     WednesdayCancelledError,
     WednesdayService,
 )
@@ -100,6 +101,41 @@ def _bad_request(message: str):
     return render_template("error.html", message=message, back_url=url_for("calendar.index")), 400
 
 
+def _rating_summary(ratings: list[dict]) -> dict:
+    """Average with one decimal place (half up, German comma) and count; None without ratings."""
+    count = len(ratings)
+    if count == 0:
+        return {"count": 0, "average": None, "label": "Noch keine Bewertungen"}
+    tenths = (sum(entry["stars"] for entry in ratings) * 20 + count) // (2 * count)
+    average = f"{tenths // 10},{tenths % 10}"
+    noun = "Bewertung" if count == 1 else "Bewertungen"
+    return {"count": count, "average": average, "label": f"Ø {average} von 5 Sternen ({count} {noun})"}
+
+
+def _ics_escape(value: str) -> str:
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    return (value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n"))
+
+
+def _ics_fold(line: str) -> str:
+    """Fold a content line at 75 octets without splitting UTF-8 characters (RFC 5545, 3.1)."""
+    encoded = line.encode("utf-8")
+    if len(encoded) <= 75:
+        return line
+    parts: list[str] = []
+    current = ""
+    limit = 75
+    for char in line:
+        if len(current.encode("utf-8")) + len(char.encode("utf-8")) > limit:
+            parts.append(current)
+            current = char
+            limit = 74  # continuation lines start with one space
+        else:
+            current += char
+    parts.append(current)
+    return "\r\n ".join(parts)
+
+
 def _detail_page(day: date, status: int = 200, error_message: str | None = None,
                  form_values: dict | None = None):
     now = _local_now()
@@ -113,8 +149,21 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
     locked = is_locked(now, day)
     cancelled = details["cancelled"]
     is_past = day < now.date()
+    ratings = details["rating_entries"]
     return render_template(
         "detail.html",
+        ics_url=url_for("calendar.calendar_ics", day_value=day.isoformat()),
+        recipe_url=url_for("calendar.recipe_page", day_value=day.isoformat()),
+        has_recipe=details["recipe_text"] is not None,
+        can_edit_recipe=not locked and not cancelled and bool(details["dish_title"]),
+        form_recipe_text=values.get("recipe_text", details["recipe_text"] or ""),
+        show_ratings=bool(details["dish_title"]) or bool(ratings),
+        can_rate=not cancelled and bool(details["dish_title"]) and day <= now.date(),
+        rating_summary=_rating_summary(ratings),
+        rating_entries=ratings,
+        form_rating_name=values.get("rating_name", ""),
+        selected_stars=values.get("stars", ""),
+        form_rating_comment=values.get("rating_comment", ""),
         cook_status=_cook_status(len(details["cook_entries"])),
         portion_limit_label=_portion_label(details["max_portions"]),
         form_max_portions=values.get(
@@ -302,6 +351,116 @@ def wednesday_detail(day_value: str):
 
     response, _ = _detail_page(day)
     return response
+
+
+@calendar_blueprint.get("/wednesdays/<day_value>/calendar.ics")
+def calendar_ics(day_value: str):
+    """C1: all-day calendar entry for one Wednesday (ADR-010); reads only, creates no rows."""
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    details = get_wednesday_details(current_app.config["DATABASE"], day)
+    title = details["dish_title"]
+    description = []
+    if details["cooks"]:
+        description.append("Köche: " + ", ".join(details["cooks"]))
+    if details["dish_description"]:
+        description.append(details["dish_description"])
+    if details["cancelled"]:
+        description.append("Abgesagt: " + details["cancellation_reason"])
+    stamp = current_app.config["CLOCK"].now().astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    iso = day.isoformat()
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Kulinarischer Mittwoch//DE",
+        "CALSCALE:GREGORIAN",
+        "BEGIN:VEVENT",
+        f"UID:kumi-{iso}@localhost",
+        f"DTSTAMP:{stamp}",
+        f"DTSTART;VALUE=DATE:{day.strftime('%Y%m%d')}",
+        f"DTEND;VALUE=DATE:{(day + timedelta(days=1)).strftime('%Y%m%d')}",
+        "SUMMARY:" + _ics_escape("Kulinarischer Mittwoch: " + (title or "Gericht noch offen")),
+    ]
+    if description:
+        lines.append("DESCRIPTION:" + _ics_escape("\n".join(description)))
+    if details["cancelled"]:
+        lines.append("STATUS:CANCELLED")
+    lines += ["END:VEVENT", "END:VCALENDAR"]
+    body = "".join(_ics_fold(line) + "\r\n" for line in lines)
+    return Response(
+        body.encode("utf-8"),
+        mimetype="text/calendar",
+        headers={"Content-Disposition": f'attachment; filename="kulinarischer-mittwoch-{iso}.ics"'},
+    )
+
+
+@calendar_blueprint.get("/wednesdays/<day_value>/recipe")
+def recipe_page(day_value: str):
+    """C3: show the recipe attached to the dish of one Wednesday."""
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    details = get_wednesday_details(current_app.config["DATABASE"], day)
+    if details["recipe_text"] is None:
+        return render_template(
+            "error.html",
+            message="Für diesen Mittwoch ist kein Rezept hinterlegt.",
+            back_url=url_for("calendar.wednesday_detail", day_value=day.isoformat()),
+        ), 404
+    return render_template(
+        "recipe.html",
+        date_heading=f"Mittwoch, {day.day:02d}.{day.month:02d}.{day.year:04d}",
+        day_value=day.isoformat(),
+        dish_title=details["dish_title"],
+        recipe_text=details["recipe_text"],
+    )
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/recipe")
+def save_recipe(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {"recipe_text": request.form.get("recipe", "")}
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).save_recipe(
+            day, values["recipe_text"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, RegistrationClosedError, WednesdayCancelledError) as exc:
+        return _write_error(day, exc, values)
+    flash("Das Rezept wurde gespeichert.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/ratings")
+def add_rating(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {
+        "rating_name": request.form.get("name", ""),
+        "stars": request.form.get("stars", ""),
+        "rating_comment": request.form.get("comment", ""),
+    }
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).add_rating(
+            day, values["rating_name"], values["stars"], values["rating_comment"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, DuplicateNameError, RatingNotYetOpenError, WednesdayCancelledError) as exc:
+        return _write_error(day, exc, values)
+    flash("Die Bewertung wurde gespeichert.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
 
 
 @calendar_blueprint.get("/wednesdays/<day_value>/shopping")
