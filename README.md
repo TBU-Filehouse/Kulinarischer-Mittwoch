@@ -1,7 +1,7 @@
 # Der kulinarische Mittwoch
 Lokale WebApp für das gemeinsame Mittwochsessen am Standort Hamburg: wer kocht, was es gibt, wer mitisst, was eingekauft werden muss und was es gekostet hat.
 
-**Stand 22.10.2026: alle MUSS-Anforderungen M1–M8, Änderung 1 (Ausgaben & Buchhaltung) und SOLL S1–S4 gebaut und technisch geprüft. Die fachliche Abnahme durch eine prüfende Person ist offen** ([Abnahme-Checkliste](03-abnahme-checkliste.md)).
+**Stand 22.10.2026: alle MUSS-Anforderungen M1–M8, Änderung 1 (Ausgaben & Buchhaltung) und SOLL S1–S4 gebaut und technisch geprüft. Abnahme-Checkliste am 22.10.2026 in der laufenden App durchgespielt: 24 von 25 Punkten mit Nachweis abgehakt (ADR-009), offen nur D4 (Sperrliste echter Namen fehlt)** ([Abnahme-Checkliste](03-abnahme-checkliste.md)). Die Kann-Anforderungen C1–C5 sind nicht umgesetzt.
 
 ## Start unter Windows
 Voraussetzung: Python mit pip (geprüft mit Python 3.14.7); Internet nur für die erstmalige Installation. Aus diesem Projektordner:
@@ -49,6 +49,6 @@ exec "$root/.venv/Scripts/python.exe" "$root/scripts/scan_commit.py"
 - Änderung: [Änderung 1 Ausgaben & Buchhaltung](docs/12-change-ausgaben.md)
 - Nachweise: [AP1](docs/07-ap1-qs.md) · [AP2](docs/08-ap2-qs.md) · [AP3](docs/09-ap3-qs-e2e.md) · [AP4](docs/10-ap4-qs-e2e.md) · [AP5](docs/11-ap5-qs-e2e.md) · [AP6](docs/14-ap6-qs-e2e.md) · [AP7](docs/15-ap7-gesamtprobe.md) · [AP8](docs/16-ap8-abgabe.md) · [SOLL S1–S4](docs/17-soll-qs.md)
 - Diagramme: [Architektur](docs/architecture.md) · [Datenmodell](docs/er-diagram.md) · [Klassen](docs/class-diagram.md) · [Sequenz](docs/sequence-anmeldung.md) · [Aktivität](docs/activity-anmeldung.md)
-- Entscheidungen: [ADR-001 Stack](docs/adr/ADR-001-lokaler-stack.md) · [ADR-002 Köche](docs/adr/ADR-002-koeche-als-esser.md) · [ADR-003 Absage](docs/adr/ADR-003-absage.md) · [ADR-004 Namen](docs/adr/ADR-004-namensvetter.md) · [ADR-005 Frist](docs/adr/ADR-005-frist.md) · [ADR-006 Formularschutz](docs/adr/ADR-006-sitzungsgebundene-formulare.md) · [ADR-007 Ausgaben/CSV](docs/adr/ADR-007-ausgaben-und-csv.md) · [ADR-008 SOLL](docs/adr/ADR-008-soll-umfang.md)
+- Entscheidungen: [ADR-001 Stack](docs/adr/ADR-001-lokaler-stack.md) · [ADR-002 Köche](docs/adr/ADR-002-koeche-als-esser.md) · [ADR-003 Absage](docs/adr/ADR-003-absage.md) · [ADR-004 Namen](docs/adr/ADR-004-namensvetter.md) · [ADR-005 Frist](docs/adr/ADR-005-frist.md) · [ADR-006 Formularschutz](docs/adr/ADR-006-sitzungsgebundene-formulare.md) · [ADR-007 Ausgaben/CSV](docs/adr/ADR-007-ausgaben-und-csv.md) · [ADR-008 SOLL](docs/adr/ADR-008-soll-umfang.md) · [ADR-009 Abnahme-Haken](docs/adr/ADR-009-haken-durch-modell.md)
 
 Repository: [TBU-Filehouse/Kulinarischer-Mittwoch](https://github.com/TBU-Filehouse/Kulinarischer-Mittwoch) (privat).

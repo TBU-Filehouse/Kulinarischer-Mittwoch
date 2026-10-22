@@ -78,3 +78,6 @@ S1–S4 gebaut (ADR-008), Abrechnungslücke mit Entscheidung B geschlossen (ADR-
 
 ## QS-Stand G5 — 22.10.2026
 G5 jetzt mechanisch: scripts/scan_commit.py als erste Harness-Stufe und lokaler Pre-Commit-Hook; Sperrliste echter Namen in .Codex/kontext/scan-denylist.txt (vom Nutzer anzulegen). Nächster Auftrag laut Nutzer: Kann-Funktionen C1–C5 in isoliertem Worktree, Merge erst nach Freigabe. Nicht committet.
+
+## Abnahme — 22.10.2026
+Checkliste nach ADR-009 durch das Modell mit Nachweis abgearbeitet: 24/25 Haken, offen D4 (Sperrliste echter Namen). Excel-Doppelklick belegt. Abnahmelauf scripts/abnahme_lauf.py. Ergebnisfeld/Unterschrift bleibt der Person. C1–C5 nicht umgesetzt; geplant in isoliertem Worktree.
