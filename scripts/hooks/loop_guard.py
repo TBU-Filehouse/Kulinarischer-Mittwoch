@@ -15,6 +15,8 @@ import tempfile
 
 _HISTORY = 6
 _QUOTED = re.compile(r"'[^']*'|\"[^\"]*\"")
+# Heredoc with a quoted delimiter (<<'EOF' / <<"EOF") is literal text the shell never runs.
+_LITERAL_HEREDOC = re.compile(r"<<-?\s*(['\"])(\w+)\1[^\n]*\n.*?^\s*\2\s*$", re.DOTALL | re.MULTILINE)
 _BOUNDED = re.compile(r"\s*timeout\s+\d+[smh]?\s+[^;&|]*$")
 _HANGS = tuple(re.compile(pattern, re.IGNORECASE) for pattern in (
     r"-m\s+(app|http\.server)\b",
@@ -30,7 +32,7 @@ def _hang_reason(tool_input: dict) -> str | None:
     command = tool_input.get("command")
     if not isinstance(command, str) or tool_input.get("run_in_background"):
         return None
-    unquoted = _QUOTED.sub("", command)
+    unquoted = _QUOTED.sub("", _LITERAL_HEREDOC.sub("", command))
     if _BOUNDED.match(unquoted):  # `timeout N …` ends on its own.
         return None
     if any(pattern.search(unquoted) for pattern in _HANGS):

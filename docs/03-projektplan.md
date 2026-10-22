@@ -115,3 +115,9 @@ Neues Blatt „Ausgaben & Buchhaltung“: A1–A5 MUSS, als AP9 (Budget/Ausgaben
 
 ## Fortschritt — 22.10.2026, nach AP6
 AP6 umgesetzt: [Nachweis](14-ap6-qs-e2e.md). Alle MUSS-Bausteine M1–M8 sowie Änderung 1 technisch gebaut; MS2 MUSS-Durchstich technisch erreicht. Nächster Auftrag AP7: integrierte Gesamtprobe im Browser (Kalender → Koch → Gericht → Essen → Einkauf → Ausgaben → Report/CSV) mit echtem Prozessneustart, danach AP8 Abgabe.
+
+## Fortschritt — 22.10.2026, nach AP7
+AP7 umgesetzt: Gesamtprobe mit echtem Neustart von `python -m app`, Matrix in [15-ap7-gesamtprobe.md](15-ap7-gesamtprobe.md). **MS3 technisch geprüft** für diesen Stand. Nächster Auftrag AP8: README-Start in höchstens drei Befehlen in sauberem Ordner verifizieren, Journal und Abnahme-Checkliste für die prüfende Person vorbereiten, Abgabestand sichern.
+
+## Fortschritt — 22.10.2026, nach AP8
+AP8 umgesetzt: [Nachweis](16-ap8-abgabe.md). **MS4 technisch erreicht.** Offen bleiben die fachliche Abnahme (Checkliste) und der Excel-Doppelklick. SOLL-Backlog S1–S5 erst nach Abnahme und nur auf Auftrag.

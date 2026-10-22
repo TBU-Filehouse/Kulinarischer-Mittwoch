@@ -70,3 +70,9 @@ Loop-Guard auf ausdrückliche Nutzerfreigabe (G9-Ausnahme) als PreToolUse-Hook i
 
 ## AP6 Einkaufsübersicht — 22.10.2026
 Direkt im Hauptlauf gebaut (Auftrag an Sub-Agent wäre länger als die Arbeit). 13 HTTP-Fälle und ein Chromium-Fall zuerst geschrieben und rot gesehen, dann Repository-Lesefunktion, Route, Template und Link. Teststrategie-Bestand ergibt 4 = 2+1+1, Koch ohne Anmeldung zählt nicht. 258 Tests grün. Kein Commit auf Nutzerwunsch.
+
+## AP7 Gesamtprobe — 22.10.2026
+Gesamtprobe im Browser gegen den echten Einstieg `python -m app` mit Systemuhr und isolierter DB: kompletter MUSS- und Änderung-1-Ablauf, harter Prozessneustart auf gleichem Port, frischer Browserkontext liest alle Werte und CSV-Bytes identisch; altes Formular wird abgelehnt. Erster Lauf grün; Gegenprobe mit gelöschter DB beim Neustart wurde rot. Eigener Entwurfsfehler vor dem ersten Lauf bemerkt: Neustart auf neuem Port hätte den Alt-Formular-Fall still übersprungen, korrigiert. Anforderungs-/Abnahmematrix docs/15-ap7-gesamtprobe.md. Loop-Guard blockierte einen Doku-Heredoc (Fehlalarm), mit rotem Test zuerst korrigiert. 263 Tests grün. MS3 technisch erreicht; Fachabnahme offen. Nicht committet.
+
+## AP8 Abgabe — 22.10.2026
+README-Start in leerem Ordner mit genau den drei Befehlen geprüft (Kopie aller Repository-Dateien, Port 5000, alle Seiten und CSV 200, data/app.db neu angelegt). Abnahme-Checkliste als ausfüllbares Protokoll mit konkreten Eingaben und Sollwerten umgebaut, alte Fassung eingeklappt erhalten; keine Haken gesetzt. README neu gegliedert, veraltete Zwischenstände entfernt. Nachweis docs/16-ap8-abgabe.md. MS4 technisch erreicht; offen bleiben Excel-Doppelklick und fachliche Abnahme durch eine Person.

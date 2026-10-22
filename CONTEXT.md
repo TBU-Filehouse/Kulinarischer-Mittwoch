@@ -66,3 +66,9 @@ Neue MUSS-Anforderungen A1–A5 (Budget 300 €/Mittwoch, Ausgaben, Plan/Ist, ge
 
 ## Umsetzungsstand AP6 — 22.10.2026
 Einkaufsübersicht (M7) gebaut, Nachweis docs/14-ap6-qs-e2e.md. M1–M8 und Änderung 1 technisch gebaut, 258 Tests grün (233 Logik/HTTP, 25 Chromium). Offen: AP7 Gesamtprobe mit Neustart, AP8 Abgabe, Excel-Doppelklick, Fachabnahme. Nicht committet.
+
+## Umsetzungsstand AP7 — 22.10.2026
+Gesamtprobe mit echtem Prozessneustart und Anforderungs-/Abnahmematrix (docs/15-ap7-gesamtprobe.md). 263 Tests grün (237 Logik/HTTP, 26 Chromium). MS3 technisch erreicht. Offen: AP8 Abgabe (README-Start in sauberer Umgebung, Journal/Checkliste), Excel-Doppelklick und fachliche Abnahme durch eine Person. Nicht committet.
+
+## Umsetzungsstand AP8 — 22.10.2026
+Abgabestand: README-Start in sauberem Ordner geprüft, Checkliste als Abnahmeprotokoll vorbereitet, README neu gegliedert (docs/16-ap8-abgabe.md). AP1–AP8 und Änderung 1 technisch abgeschlossen. **Offen: fachliche Abnahme durch eine Person, Excel-Doppelklick.** SOLL S1–S4 nicht gebaut.

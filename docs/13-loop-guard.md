@@ -14,7 +14,7 @@ Auf Nutzerwunsch: Schleifen ohne Fortschritt und Befehle mit Hänger-Potenzial m
 scripts/check.py begrenzt jede Prüfstufe auf 120 s (Exit 124). E2E-Server haben 15 s Startfrist, Thread-Tests Barrieren mit Timeout.
 
 ## Nachweis
-24 Fälle in tests/test_loop_guard.py, zuerst rot (Modul fehlte), dann grün; ein Fall fand die ANSI-Kodierung der Fehlermeldung unter Windows.
+28 Fälle in tests/test_loop_guard.py, zuerst rot (Modul fehlte), dann grün; ein Fall fand die ANSI-Kodierung der Fehlermeldung unter Windows.
 
 ## Aktivierung
 Eintrag in `.claude/settings.json` des Projekts (Shell bash, Zeitlimit 10 s):
@@ -26,3 +26,4 @@ Eintrag in `.claude/settings.json` des Projekts (Shell bash, Zeitlimit 10 s):
 ## Live-Nachweis 22.10.2026
 Befehl vor dem Eintrag mit nachgebauter Hook-Eingabe geprüft (harmlos Exit 0, Hänger Exit 2). Nach dem Eintrag in dieser Sitzung: `timeout 3 tail -f /dev/null` wurde zunächst blockiert. Das war ein Fehlalarm, denn der Befehl endet von selbst; mit rotem Test zuerst korrigiert. Danach lief `timeout 2 tail -f /dev/null` durch und endete mit Exit 124, während ungebremste Varianten weiter blockiert werden.
 Abschalten: Umgebungsvariable `KUMI_LOOP_GUARD=off` oder den Eintrag aus `.claude/settings.json` entfernen.
+Zweiter Live-Befund (AP7): Ein Heredoc mit gequotetem Begrenzer, dessen Text `python -m app` erwähnte, wurde blockiert. Solche Heredocs werden nie ausgeführt und sind seither ausgenommen; ungequotete Heredocs bleiben geprüft. Roter Test zuerst, danach lief derselbe Befehl live durch.

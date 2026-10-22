@@ -1,4 +1,55 @@
 # Abnahme-Checkliste
+Stand 22.10.2026 · **Software gebaut und technisch geprüft (263 automatische Tests, siehe [Matrix](docs/15-ap7-gesamtprobe.md)). Fachliche Abnahme offen.**
+Diese Checkliste füllt eine **prüfende Person** aus, nachdem sie jeden Fall selbst in der laufenden App durchgeführt hat. Das Modell setzt keine Haken (G7). Automatische Tests ersetzen die Abnahme nicht, sie stehen nur als Nachweis daneben.
+
+## Vorbereitung (einmal)
+1. App laut README mit drei Befehlen starten. Für eine saubere Vorführung empfiehlt sich eine eigene Datei, z. B. in PowerShell: `$env:KUMI_DATABASE="C:\Temp\abnahme.db"` vor dem dritten Befehl (absoluter Pfad).
+2. Browser auf http://127.0.0.1:5000 öffnen.
+3. Nur fiktive Namen verwenden (z. B. Anna Müller, Ben Muster, Cora Demo, Deniz Test). Keine echten Kollegennamen.
+4. „Offener Mittwoch“ = ein Mittwoch, dessen Dienstag 12:00 Uhr noch in der Zukunft liegt. „Vergangener Mittwoch“ = einer vor heute.
+Code-Stand beim Prüfen notieren: `git rev-parse --short HEAD`.
+
+## MUSS — Teil 1 (Grundfunktionen)
+| Fall | Durchführen | Erwartet | Ist / Datum / Person | OK |
+|---|---|---|---|---|
+| A-M1 | Kalender öffnen; vor und zurück blättern, auch Dez→Jan und 24 Monate in die Zukunft; Mittwoch anklicken | Montag als erster Tag, Mittwoche hervorgehoben, jeder Mittwoch erreichbar und vor Frist buchbar; Zelle zeigt Köche, Gericht, Anmeldezahl | | [ ] |
+| A-M2 | Offener Mittwoch: Anna Müller, Ben Muster als Köche; dann Cora Demo versuchen; Anna austragen; Cora erneut | Dritter Koch abgewiesen („zwei Köche“), kein Kochformular mehr bei 2; nach Austragen ist Cora möglich | | [ ] |
+| A-M3 | Gericht mit Titel, Beschreibung und je einer Kennzeichnung speichern, Seite neu laden; leeren Titel versuchen | Werte bleiben nach Neuladen; leerer Titel abgewiesen, Eingabe bleibt im Formular | | [ ] |
+| A-M4 | Cora Demo „alles“ ohne Hinweis, Deniz Test „vegan“ mit Hinweis „keine Nüsse“ anmelden; Deniz abmelden | Beide gelistet, Zahl 2; nach Abmeldung Zahl 1 | | [ ] |
+| A-M5 | „ Anna “ anmelden, dann „anna“ am selben Mittwoch; „anna“ an einem anderen Mittwoch; „Anna A“ am ersten | Zweiter Versuch abgewiesen; anderer Mittwoch und „Anna A“ erlaubt | | [ ] |
+| A-M6 | Vergangenen Mittwoch öffnen; Anmeldeschluss auf einem offenen Mittwoch ablesen | Vergangener Mittwoch: „Anmeldung geschlossen“, keine Koch-/Gericht-/Anmeldeformulare; offener Mittwoch zeigt „Dienstag … um 12:00 Uhr, Europe/Berlin“. Die Sekundengrenze und direkte Serveranfragen sind nur automatisch prüfbar (test_rules.py, test_writes.py, test_registrations.py) | | [ ] |
+| A-M7 | Auf einem Mittwoch: 2× alles, 1× vegetarisch mit Hinweis „keine Nüsse“, 1× vegan anmelden, dazu ein Koch ohne Anmeldung; Link „Einkaufsübersicht“ | Gesamt 4 = 2 + 1 + 1; Hinweis mit Namen; Koch zählt nicht | | [ ] |
+| A-M8 | Daten wie oben anlegen; Server mit Strg+C beenden, dritten README-Befehl erneut ausführen; Seite in neuem Browserfenster öffnen | Köche, Gericht, Anmeldungen und Ausgaben unverändert vorhanden | | [ ] |
+
+## MUSS — Teil 2 (Änderung 1: Ausgaben & Buchhaltung)
+Auf einem Mittwoch mit Anna Müller und Ben Muster als Köchen und vier Essen-Anmeldungen.
+| Fall | Durchführen | Erwartet | Ist / Datum / Person | OK |
+|---|---|---|---|---|
+| A1 | Mittwoch öffnen | „Budget 300,00 €“ sichtbar, auch ohne Ausgaben | | [ ] |
+| A2 | Erfassen: „Gemüse Wochenmarkt“ 23,45 (Anna) · „Brot; Butter“ 8,10 (Ben) · „Käse "Gouda" alt“ 12,50 (Anna) | Drei Positionen mit Betrag, Beschreibung, ausgelegt von | | [ ] |
+| A3 | Budgetkarte lesen | Budget 300,00 €, Ausgaben 44,05 €, noch frei 255,95 €, Kosten pro angemeldeter Person 11,01 € (bei 4 Anmeldungen) | | [ ] |
+| A3a | „Großeinkauf Fisch“ 280,00 (Ben) erfassen; dann Genehmigung mit Name und Begründung | Erst „Budget überschritten, nicht genehmigt“, Überschreitung 24,05 €, rot markiert; danach „genehmigt“ mit Vermerk | | [ ] |
+| A4 | Im Kalender „Monatsreport“ öffnen | Alle Mittwoche des Monats, Summe 324,05 €, Erstattung Anna 35,95 € · Ben 288,10 €; vor der Genehmigung „nicht genehmigt“ markiert | | [ ] |
+| A5 | „CSV herunterladen“, Datei **per Doppelklick in Excel** öffnen | Kopfzeile plus **4 Datenzeilen** (Excel zeigt 5 Zeilen), 5 Spalten sauber getrennt, „Brot; Butter“ in einer Zelle, Umlaute korrekt, Beträge mit Komma | | [ ] |
+
+## SOLL (nicht gebaut — nicht abhaken)
+S1 Kochstatus, S2 Warteliste, S3 Absage, S4 Historie-Sperre sind nicht umgesetzt. S5 (375 px) ist automatisch für Kalender, Formulare, Einkauf und Report geprüft; bei Bedarf am Handy oder in den Entwicklertools gegenprüfen: [ ] S5
+
+## Abgabe
+| Fall | Stand 22.10.2026 | OK |
+|---|---|---|
+| D1 README-Start mit höchstens drei Befehlen | Technisch geprüft: Kopie aller Repository-Dateien in leerem Ordner, genau die drei README-Befehle, App startete auf Port 5000, alle Seiten und CSV lieferten 200 (docs/16-ap8-abgabe.md). Bestätigung durch Person offen | [ ] |
+| D2 Journal mit Vorgehen, Entscheidungen, Prompt-Highlights, Abweichungen | 02-journal.md fortgeschrieben, inkl. Antwort auf „Wie viel umgebaut?“ (Änderung 1) | [ ] |
+| D3 Alle MUSS-Fälle selbst durchgegangen | offen — Tabellen oben | [ ] |
+| D4 Keine echten Namen, Zugangsdaten, lokalen DBs im Abgabeumfang | Sichtprüfung/Scan vor jedem Commit; .gitignore schließt data/, *.db, .harness/, test-results/, Kontextordner aus | [ ] |
+| D5 Code-Freeze 17:00 bzw. begründet bis 17:30 | Die Uhrzeiten im Projektplan waren ein bedingtes Szenario; tatsächliche Abgabezeit trägt die prüfende Person ein | [ ] |
+
+**Ergebnis der Abnahme:** ______ (angenommen / mit Mängeln / abgelehnt) · Datum: ______ · Person: ______ · Code-Stand: ______
+
+<details>
+<summary>Bisherige Fassung und Verlauf der Checkliste (unverändert erhalten)</summary>
+
+# Abnahme-Checkliste
 Stand 22.10.2026 · **Alle Softwarefälle offen: Anwendung noch nicht gebaut.**
 Erst nach tatsächlicher Ausführung abhaken. Für jeden Fall Ist-Ergebnis, Datum/Uhrzeit, Code-Stand und Beleg ergänzen. Die Tabelle allein ist kein Nachweis.
 
@@ -61,3 +112,8 @@ Automatisiert belegt (tests/test_expenses.py, tests/e2e/test_expenses_browser.py
 
 ## AP6 technisch — 22.10.2026
 A-M7 automatisiert belegt (docs/14-ap6-qs-e2e.md). Haken bleibt offen bis zur Durchführung durch eine prüfende Person.
+
+## AP7 technisch — 22.10.2026
+Gesamtprobe mit echtem Prozessneustart grün (docs/15-ap7-gesamtprobe.md); A-M8 dort automatisiert belegt. Alle Haken bleiben offen bis zur Durchführung durch eine prüfende Person.
+
+</details>

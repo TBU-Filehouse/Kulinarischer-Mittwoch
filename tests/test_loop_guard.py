@@ -63,6 +63,8 @@ def test_block_resets_so_a_changed_approach_continues(tmp_path):
     'python -m http.server 8000',
     'while true; do echo x; done',
     'while ($true) { Start-Sleep 1 }',
+    'cat <<EOF\n`python -m app`\nEOF',  # Unquoted heredoc: the shell would run the backticks.
+    "cat > doc.md <<'EOF'\ntext\nEOF\npython -m app",
 ])
 def test_foreground_commands_that_never_end_are_blocked(tmp_path,command):
     code,message=call(tmp_path,command=command)
@@ -76,6 +78,8 @@ def test_foreground_commands_that_never_end_are_blocked(tmp_path,command):
     'grep -n "tail -f" README.md',
     'timeout 3 tail -f server.log',
     'timeout 10 python -m app',
+    "cat > doc.md <<'EOF'\nStart mit `python -m app` und tail -f log\nEOF\necho ok",
+    'cat > doc.md <<"END"\nwhile true wird beschrieben\nEND',
 ])
 def test_normal_commands_pass(tmp_path,command):
     assert call(tmp_path,command=command)[0]==0
