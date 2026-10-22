@@ -49,3 +49,15 @@ M2/M3 technisch durch echte Formulare, Browserläufe und Transaktions-/Race-/Fri
 
 ## AP5 technisch — 22.10.2026
 A-M4/A-M5/A-M6 sind für Essensanmeldungen automatisiert belegt (docs/11-ap5-qs-e2e.md, 175 Tests grün). Die Haken bleiben offen, bis eine prüfende Person die Fälle in der laufenden App durchgeht und Ergebnis/Zeitpunkt einträgt.
+
+## Teil 2 — Ausgaben & Buchhaltung (Änderung 1)
+Automatisiert belegt (tests/test_expenses.py, tests/e2e/test_expenses_browser.py), aber erst nach Durchführung durch eine prüfende Person abhaken.
+- [ ] A1 — Budget 300 € ist pro Mittwoch sichtbar.
+- [ ] A2 — Mittwoch mit Anna und Ben als Köchen: „Gemüse Wochenmarkt“ 23,45 € (Anna) · „Brot; Butter“ 8,10 € (Ben) · „Käse "Gouda" alt“ 12,50 € (Anna).
+- [ ] A3 — Plan vs. Ist: Budget 300,00 €, Ausgaben 44,05 €, verbleibend 255,95 €, Kosten pro angemeldeter Person.
+- [ ] A3a — „Großeinkauf Fisch“ 280,00 € (Ben) → überschritten (24,05 €); Genehmigung mit Vermerk → als genehmigt erkennbar.
+- [ ] A4 — Monatsreport: Summen und Erstattung pro Koch (Anna 35,95 € · Ben 288,10 €).
+- [ ] A5 — CSV herunterladen und per Doppelklick in Excel öffnen: 4 Datenzeilen plus Kopfzeile, Spalten getrennt, Umlaute korrekt, Beträge mit Komma.
+
+## AP6 technisch — 22.10.2026
+A-M7 automatisiert belegt (docs/14-ap6-qs-e2e.md). Haken bleibt offen bis zur Durchführung durch eine prüfende Person.

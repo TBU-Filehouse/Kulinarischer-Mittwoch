@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Report {{ month_name }} {{ year }} · Der kulinarische Mittwoch{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('calendar.index', month=month_value) }}">← Zum Monatskalender</a>
+  <section class="detail-hero" aria-labelledby="page-title">
+    <p class="eyebrow">Monatsreport</p>
+    <h1 id="page-title">{{ month_name }} {{ year }}</h1>
+    <p>Ausgaben gesamt: <strong id="report-total">{{ report_total }}</strong></p>
+    <p><a class="button-link" href="{{ csv_url }}">CSV herunterladen</a></p>
+  </section>
+
+  <section class="info-card" aria-labelledby="report-days-heading">
+    <h2 id="report-days-heading">Mittwoche</h2>
+    <div class="report-scroll" role="region" aria-label="Mittwoche im Monat" tabindex="0">
+      <table class="report-table report-days">
+        <thead>
+          <tr><th scope="col">Datum</th><th scope="col">Köche</th><th scope="col">Ausgaben</th><th scope="col">Budget</th><th scope="col">Überschreitung</th><th scope="col">Status</th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr data-report-date="{{ row.iso }}" class="{{ 'unapproved' if row.unapproved else '' }}">
+              <td data-label="Datum"><a href="{{ row.link }}">{{ row.label }}</a></td>
+              <td data-label="Köche">{{ row.cooks or '–' }}</td>
+              <td data-label="Ausgaben">{{ row.total }}</td>
+              <td data-label="Budget">{{ row.budget }}</td>
+              <td data-label="Überschreitung">{{ row.over or '–' }}</td>
+              <td data-label="Status">{{ row.status }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="info-card" aria-labelledby="reimbursement-heading">
+    <h2 id="reimbursement-heading">Erstattung pro Koch</h2>
+    {% if reimbursements %}
+      <table class="report-table">
+        <thead><tr><th scope="col">Koch</th><th scope="col">Erstattung</th></tr></thead>
+        <tbody>
+          {% for entry in reimbursements %}
+            <tr data-reimbursement="{{ entry.name }}"><td>{{ entry.name }}</td><td>{{ entry.amount }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">In diesem Monat wurden keine Ausgaben erfasst.</p>
+    {% endif %}
+  </section>
+{% endblock %}

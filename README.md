@@ -21,7 +21,7 @@ Nach einmaliger Installation der Entwicklungsabhängigkeiten und des Testbrowser
 .\.venv\Scripts\python.exe -m playwright install chromium
 .\.venv\Scripts\python.exe scripts/check.py
 ```
-Der Check prüft Abhängigkeiten, Logik/HTTP und Chromium-E2E als getrennte Stufen, liefert Exit 1 bei Fehlern und schreibt .harness/result.json mit Quellstand-Hash vorher/nachher. **Technischer Erfolg ist keine Produktabnahme.** 175 Tests prüfen AP1 bis AP5, darunter 21 echte Chromium-E2E-Fälle. Datenbanktests nutzen ausschließlich temporäre Datenbanken, darunter einen echten Serverneustart; die Fachregeln werden ohne Datenbank mit vorgegebenen Zeitpunkten geprüft. Die normale data/app.db wird dabei nicht beschrieben.
+Der Check prüft Abhängigkeiten, Logik/HTTP und Chromium-E2E als getrennte Stufen, liefert Exit 1 bei Fehlern und schreibt .harness/result.json mit Quellstand-Hash vorher/nachher. **Technischer Erfolg ist keine Produktabnahme.** 258 Tests prüfen AP1 bis AP6 und Änderung 1 (Ausgaben, Monatsreport, CSV), darunter 25 echte Chromium-E2E-Fälle. [AP6-Nachweis Einkaufsübersicht](docs/14-ap6-qs-e2e.md). Siehe [Änderung 1](docs/12-change-ausgaben.md). Datenbanktests nutzen ausschließlich temporäre Datenbanken, darunter einen echten Serverneustart; die Fachregeln werden ohne Datenbank mit vorgegebenen Zeitpunkten geprüft. Die normale data/app.db wird dabei nicht beschrieben.
 Details und Grenzen: [AP1-QS-Nachweis](docs/07-ap1-qs.md) und [AP2-QS-Nachweis](docs/08-ap2-qs.md) sowie [AP3 mit E2E](docs/09-ap3-qs-e2e.md). Die Claude-/Codex-Hookdiagnose bleibt wie besprochen zurückgestellt; der lokale Check ist jetzt tatsächlich eingerichtet.
 
 ## Planung und Dokumentation

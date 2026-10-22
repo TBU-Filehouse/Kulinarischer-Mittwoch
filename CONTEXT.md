@@ -60,3 +60,9 @@ Auf Nutzerwunsch liegt die Fortschrittssicherung nun im privaten Repository TBU-
 
 ## Umsetzungsstand AP5 — 22.10.2026
 Essen-An-/Abmeldung mit Ernährungsform und optionalem Hinweis gebaut; Namensvergleich trim+casefold, UNIQUE gegen Rennen, Frist für An- und Abmeldung serverseitig. Abmeldung löscht den Datensatz (Must-Ausbau). 175 Tests: 154 Logik/HTTP, 21 Chromium. Nachweis docs/11-ap5-qs-e2e.md. M4/M5/M6 technisch belegt, Gesamtproduktabnahme offen. Nächster Bauabschnitt AP6 Einkaufsübersicht.
+
+## Änderung 1 Ausgaben & Buchhaltung — 22.10.2026
+Neue MUSS-Anforderungen A1–A5 (Budget 300 €/Mittwoch, Ausgaben, Plan/Ist, genehmigte Überschreitung, Monatsreport, Excel-CSV) als AP9/AP10 umgesetzt; Analyse docs/12-change-ausgaben.md, Entscheidung ADR-007. W „Zahlungen“ bleibt: nur Erfassung/Bericht. 242 Tests grün (218 Logik/HTTP, 24 Chromium). Loop-Guard docs/13-loop-guard.md gebaut, Hook-Aktivierung nur mit Freigabe. Offen: AP6 Einkauf, AP7/AP8, Excel-Doppelklick und Fachabnahme.
+
+## Umsetzungsstand AP6 — 22.10.2026
+Einkaufsübersicht (M7) gebaut, Nachweis docs/14-ap6-qs-e2e.md. M1–M8 und Änderung 1 technisch gebaut, 258 Tests grün (233 Logik/HTTP, 25 Chromium). Offen: AP7 Gesamtprobe mit Neustart, AP8 Abgabe, Excel-Doppelklick, Fachabnahme. Nicht committet.

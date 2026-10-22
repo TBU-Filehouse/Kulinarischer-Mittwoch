@@ -142,3 +142,38 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex="0"]:focus
   .detail-grid { grid-template-columns: 1fr; }
   .detail-hero, .info-card, .error-card { padding: 1.1rem; }
 }
+
+/* Budget, expenses and monthly report */
+.budget-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem 1rem; margin: 0 0 .75rem; }
+.budget-figures dt { color: var(--muted); font-size: .88rem; }
+.budget-figures dd { margin: 0; font-size: 1.25rem; font-weight: 750; }
+.budget-status { border-radius: 10px; padding: .55rem .85rem; font-weight: 700; }
+.budget-status.status-ok { background: #e4f1e6; color: #205632; }
+.budget-status.status-approved { background: #f3e9dc; color: #754719; }
+.budget-status.status-over { background: #f8e8e5; color: #7d2921; border: 2px solid #7d2921; }
+.budget-card.over .over-figure dd { color: #7d2921; }
+.approval-note { margin: .5rem 0; overflow-wrap: anywhere; }
+.expense-list { margin: .75rem 0 0; padding-left: 1.25rem; }
+.expense-list li { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem .6rem; padding-block: .3rem; }
+.expense-description { font-weight: 700; overflow-wrap: anywhere; }
+.expense-amount { font-variant-numeric: tabular-nums; }
+.expense-payer { color: var(--muted); font-size: .93rem; }
+.expense-list .inline-form { margin-left: auto; }
+.report-scroll { overflow-x: auto; }
+.report-table { width: 100%; border-collapse: collapse; }
+.report-table th, .report-table td { padding: .45rem .6rem; border-bottom: 1px solid #e3ddd0; text-align: left; font-variant-numeric: tabular-nums; }
+.report-table tr.unapproved { background: #f8e8e5; color: #7d2921; font-weight: 700; }
+.report-link { margin: .75rem 0 0; }
+
+@media (max-width: 700px) {
+  .report-days thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .report-days tr { display: block; padding: .5rem 0; border-bottom: 1px solid #e3ddd0; }
+  .report-days td { display: grid; grid-template-columns: 9rem 1fr; gap: .5rem; padding: .15rem .4rem; border: 0; }
+  .report-days td::before { content: attr(data-label); font-weight: 700; color: var(--muted); }
+}
+
+.shopping-diets { display: grid; gap: .35rem; margin: 0; }
+.shopping-diets div { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #e3ddd0; padding-block: .3rem; }
+.shopping-diets dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.shopping-notes { margin: 0; padding-left: 1.25rem; }
+.shopping-notes li { padding-block: .25rem; overflow-wrap: anywhere; }

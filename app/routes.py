@@ -1,15 +1,18 @@
 """Calendar pages and protected Wednesday planning forms."""
 
 import calendar
+import csv
+import io
 import re
 import sqlite3
 from datetime import date
 from zoneinfo import ZoneInfo
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, current_app, flash, redirect, render_template, request, url_for
 from werkzeug.exceptions import HTTPException
 
-from .repository import get_calendar_entries, get_wednesday_details
+from .money import BUDGET_CENTS, budget_status, cost_per_person_cents, format_euro, format_plain
+from .repository import get_calendar_entries, get_month_report_data, get_shopping_data, get_wednesday_details
 from .rules import (
     CookLimitError,
     DuplicateNameError,
@@ -18,7 +21,7 @@ from .rules import (
     is_locked,
     registration_deadline,
 )
-from .services import NotFoundError, WednesdayService
+from .services import ExpenseConflictError, NotFoundError, WednesdayService
 from .csrf import get_csrf_token, validate_csrf_request
 
 
@@ -76,8 +79,31 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
     details = get_wednesday_details(current_app.config["DATABASE"], day)
     deadline = registration_deadline(day)
     values = form_values or {}
+    total = details["expense_total_cents"]
+    approval = details["approval"]
+    per_person = cost_per_person_cents(total, details["registration_count"])
+    budget_state = budget_status(total, approval["approved_total_cents"] if approval else None)
     return render_template(
         "detail.html",
+        budget_total=format_euro(BUDGET_CENTS),
+        expense_sum=format_euro(total),
+        budget_remaining=format_euro(BUDGET_CENTS - total),
+        budget_over_amount=format_euro(total - BUDGET_CENTS),
+        over_budget=total > BUDGET_CENTS,
+        budget_status=budget_state,
+        approved=budget_state == "Budget überschritten, genehmigt",
+        approval=approval,
+        cost_per_person=format_euro(per_person) if per_person is not None else "keine Anmeldungen",
+        expense_entries=[
+            {**entry, "amount_label": format_euro(entry["amount_cents"])}
+            for entry in details["expense_entries"]
+        ],
+        form_expense_amount=values.get("expense_amount", ""),
+        form_expense_description=values.get("expense_description", ""),
+        selected_expense_cook=values.get("expense_cook_id", ""),
+        form_approved_by=values.get("approved_by", ""),
+        form_approval_reason=values.get("approval_reason", ""),
+        report_url=url_for("calendar.monthly_report", month_value=f"{day.year:04d}-{day.month:02d}"),
         date_heading=f"Mittwoch, {day.day:02d}.{day.month:02d}.{day.year:04d}",
         day_value=day.isoformat(),
         month_value=f"{day.year:04d}-{day.month:02d}",
@@ -209,6 +235,7 @@ def index():
         next_month=next_month,
         weeks=month_grid,
         weekdays=_WEEKDAYS,
+        report_url=url_for("calendar.monthly_report", month_value=f"{year:04d}-{month:02d}"),
     )
 
 
@@ -221,6 +248,25 @@ def wednesday_detail(day_value: str):
 
     response, _ = _detail_page(day)
     return response
+
+
+@calendar_blueprint.get("/wednesdays/<day_value>/shopping")
+def shopping(day_value: str):
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    data = get_shopping_data(current_app.config["DATABASE"], day)
+    return render_template(
+        "shopping.html",
+        date_heading=f"Mittwoch, {day.day:02d}.{day.month:02d}.{day.year:04d}",
+        day_value=day.isoformat(),
+        dish_title=data["dish_title"],
+        dish_type=_DISH_TYPES.get(data["dish_type"]),
+        total=data["total"],
+        diet_rows=[(key, _DIETS[key], data["counts"][key]) for key in ("alles", "vegetarisch", "vegan")],
+        notes=data["notes"],
+    )
 
 
 @calendar_blueprint.post("/wednesdays/<day_value>/cooks")
@@ -252,7 +298,7 @@ def remove_cook(day_value: str, cook_id: int):
         WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).remove_cook(day, cook_id)
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, RegistrationClosedError, NotFoundError) as exc:
+    except (InvalidInputError, RegistrationClosedError, NotFoundError, ExpenseConflictError) as exc:
         return _write_error(day, exc)
     flash("Der Koch wurde ausgetragen.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
@@ -323,3 +369,153 @@ def save_dish(day_value: str):
         return _write_error(day, exc, values)
     flash("Das Gericht wurde gespeichert.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/expenses")
+def add_expense(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {
+        "expense_amount": request.form.get("amount", ""),
+        "expense_description": request.form.get("description", ""),
+        "expense_cook_id": request.form.get("cook_id", ""),
+    }
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).add_expense(
+            day, values["expense_amount"], values["expense_description"], values["expense_cook_id"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, ExpenseConflictError) as exc:
+        return _write_error(day, exc, values)
+    flash("Die Ausgabe wurde erfasst.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/expenses/<int:expense_id>/remove")
+def remove_expense(day_value: str, expense_id: int):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).remove_expense(
+            day, expense_id
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, NotFoundError) as exc:
+        return _write_error(day, exc)
+    flash("Die Ausgabe wurde gelöscht.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/approval")
+def approve_overrun(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {
+        "approved_by": request.form.get("approved_by", ""),
+        "approval_reason": request.form.get("reason", ""),
+    }
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).approve_overrun(
+            day, values["approved_by"], values["approval_reason"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, ExpenseConflictError) as exc:
+        return _write_error(day, exc, values)
+    flash("Die Überschreitung wurde genehmigt.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+def _csv_text(value: str) -> str:
+    return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
+
+
+@calendar_blueprint.get("/reports/<month_value>")
+def monthly_report(month_value: str):
+    is_csv = month_value.endswith(".csv")
+    try:
+        year, month = _parse_month(month_value[:-4] if is_csv else month_value)
+    except ValueError:
+        return _bad_request("Bitte wählen Sie einen gültigen Monat im Format JJJJ-MM.")
+    first_day = date(year, month, 1)
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+    data = get_month_report_data(current_app.config["DATABASE"], first_day, last_day)
+    month_key = f"{year:04d}-{month:02d}"
+
+    if is_csv:
+        buffer = io.StringIO(newline="")
+        writer = csv.writer(buffer, delimiter=";", lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["Datum", "Standort", "Beschreibung", "Ausgelegt_von", "Betrag"])
+        for expense in data["expenses"]:
+            iso = expense["date"]
+            writer.writerow([
+                f"{iso[8:10]}.{iso[5:7]}.{iso[0:4]}",
+                "Hamburg",
+                _csv_text(expense["description"]),
+                _csv_text(expense["paid_by_name"]),
+                format_plain(expense["amount_cents"]),
+            ])
+        return Response(
+            ("\ufeff" + buffer.getvalue()).encode("utf-8"),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="ausgaben-{month_key}.csv"'},
+        )
+
+    totals: dict[str, int] = {}
+    reimbursement: dict[str, dict] = {}
+    for expense in data["expenses"]:
+        totals[expense["date"]] = totals.get(expense["date"], 0) + expense["amount_cents"]
+        entry = reimbursement.setdefault(
+            expense["paid_by_name"].casefold(), {"name": expense["paid_by_name"], "cents": 0}
+        )
+        entry["cents"] += expense["amount_cents"]
+    cooks_by_date: dict[str, list[str]] = {}
+    for iso, name in data["cooks"]:
+        cooks_by_date.setdefault(iso, []).append(name)
+
+    rows = []
+    for week in calendar.Calendar(firstweekday=calendar.MONDAY).monthdayscalendar(year, month):
+        for day_number in week:
+            if day_number == 0 or date(year, month, day_number).weekday() != 2:
+                continue
+            day = date(year, month, day_number)
+            iso = day.isoformat()
+            total = totals.get(iso, 0)
+            approval = data["approvals"].get(iso)
+            status = budget_status(total, approval["approved_total_cents"] if approval else None)
+            rows.append({
+                "iso": iso,
+                "label": f"{day.day:02d}.{day.month:02d}.{day.year:04d}",
+                "cooks": ", ".join(cooks_by_date.get(iso, [])),
+                "total": format_euro(total),
+                "budget": format_euro(BUDGET_CENTS),
+                "over": format_euro(total - BUDGET_CENTS) if total > BUDGET_CENTS else None,
+                "status": {"Im Budget": "Im Budget",
+                           "Budget überschritten, genehmigt": "genehmigt"}.get(status, "nicht genehmigt"),
+                "unapproved": status == "Budget überschritten, nicht genehmigt",
+                "link": url_for("calendar.wednesday_detail", day_value=iso),
+            })
+    return render_template(
+        "report.html",
+        month_name=_MONTH_NAMES[month - 1],
+        year=year,
+        month_value=month_key,
+        rows=rows,
+        report_total=format_euro(sum(totals.values())),
+        reimbursements=[
+            {"name": entry["name"], "amount": format_euro(entry["cents"])}
+            for entry in sorted(reimbursement.values(), key=lambda item: item["name"].casefold())
+        ],
+        csv_url=url_for("calendar.monthly_report", month_value=f"{month_key}.csv"),
+    )

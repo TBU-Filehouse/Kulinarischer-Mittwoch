@@ -78,6 +78,7 @@
       <h2 id="registrations-heading">Essen-Anmeldungen</h2>
       <p class="count-number">{{ registration_count }}</p>
       <p class="muted">{{ 'Person' if registration_count == 1 else 'Personen' }} angemeldet</p>
+      <p class="shopping-link"><a href="{{ url_for('calendar.shopping', day_value=day_value) }}">Einkaufsübersicht</a></p>
       {% if registration_entries %}
         <ul class="registration-list">
           {% for entry in registration_entries %}
@@ -112,6 +113,73 @@
           <button type="submit">Zum Essen anmelden</button>
         </form>
       {% endif %}
+    </section>
+
+    <section class="info-card budget-card {{ 'over' if over_budget else '' }}" aria-labelledby="budget-heading">
+      <h2 id="budget-heading">Budget und Ausgaben</h2>
+      <dl class="budget-figures">
+        <div><dt>Budget</dt><dd id="budget-total">{{ budget_total }}</dd></div>
+        <div><dt>Ausgaben gesamt</dt><dd id="expense-sum">{{ expense_sum }}</dd></div>
+        {% if over_budget %}
+          <div class="over-figure"><dt>Überschreitung</dt><dd id="budget-over">{{ budget_over_amount }}</dd></div>
+        {% else %}
+          <div><dt>Noch frei</dt><dd id="budget-remaining">{{ budget_remaining }}</dd></div>
+        {% endif %}
+        <div><dt>Kosten pro angemeldeter Person</dt><dd id="cost-per-person">{{ cost_per_person }}</dd></div>
+      </dl>
+      <p id="budget-status" class="budget-status {{ 'status-over' if over_budget and not approved else ('status-approved' if approved else 'status-ok') }}">{{ budget_status }}</p>
+      {% if approved and approval %}
+        <p id="approval-note" class="approval-note">Genehmigt von {{ approval.approved_by }}: {{ approval.reason }}</p>
+      {% endif %}
+
+      {% if expense_entries %}
+        <ul class="expense-list">
+          {% for expense in expense_entries %}
+            <li>
+              <span class="expense-description">{{ expense.description }}</span>
+              <span class="expense-amount">{{ expense.amount_label }}</span>
+              <span class="expense-payer">ausgelegt von {{ expense.paid_by_name }}</span>
+              <form class="inline-form" method="post" action="{{ url_for('calendar.remove_expense', day_value=day_value, expense_id=expense.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="secondary-button" type="submit" aria-label="{{ expense.description }} löschen">Löschen</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Es sind noch keine Ausgaben erfasst.</p>
+      {% endif %}
+
+      {% if cook_entries %}
+        <form class="write-form expense-form" method="post" action="{{ url_for('calendar.add_expense', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="expense-amount">Betrag (€)</label>
+          <input id="expense-amount" name="amount" type="text" inputmode="decimal" required value="{{ form_expense_amount or '' }}">
+          <label for="expense-description">Beschreibung der Ausgabe</label>
+          <input id="expense-description" name="description" type="text" maxlength="200" required value="{{ form_expense_description or '' }}">
+          <label for="expense-cook">Ausgelegt von</label>
+          <select id="expense-cook" name="cook_id" required>
+            {% for cook in cook_entries %}
+              <option value="{{ cook.id }}" {{ 'selected' if selected_expense_cook == (cook.id|string) else '' }}>{{ cook.display_name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">Ausgabe erfassen</button>
+        </form>
+      {% else %}
+        <p class="muted">Ausgaben können erfasst werden, sobald ein Koch eingetragen ist.</p>
+      {% endif %}
+
+      {% if over_budget and not approved %}
+        <form class="write-form approval-form" method="post" action="{{ url_for('calendar.approve_overrun', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="approved-by">Genehmigt von</label>
+          <input id="approved-by" name="approved_by" type="text" maxlength="80" required value="{{ form_approved_by or '' }}">
+          <label for="approval-reason">Begründung</label>
+          <textarea id="approval-reason" name="reason" maxlength="1000" required rows="3">{{ form_approval_reason or '' }}</textarea>
+          <button type="submit">Überschreitung genehmigen</button>
+        </form>
+      {% endif %}
+      <p><a href="{{ report_url }}">Monatsreport ansehen</a></p>
     </section>
 
     <section class="info-card deadline-card" aria-labelledby="deadline-heading">

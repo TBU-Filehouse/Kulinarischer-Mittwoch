@@ -1,15 +1,20 @@
 """Transactional write operations for Wednesday planning."""
 
+import re
 import sqlite3
 from datetime import date
 from pathlib import Path
 
+from datetime import timezone
+
 from .clock import Clock
+from .money import BUDGET_CENTS, parse_amount_cents
 from .repository import connect_database
 from .rules import (
     CookLimitError,
     DuplicateNameError,
     InvalidInputError,
+    RuleViolation,
     ensure_cook_slot,
     ensure_name_available,
     ensure_open,
@@ -20,6 +25,10 @@ from .rules import (
 
 class NotFoundError(LookupError):
     """A requested record does not belong to the supplied Wednesday."""
+
+
+class ExpenseConflictError(RuleViolation):
+    """The operation conflicts with existing expenses or the budget state."""
 
 
 _DISH_TYPES = frozenset({"vegan", "vegetarisch", "fleisch_fisch"})
@@ -85,6 +94,13 @@ class WednesdayService:
             ).fetchone()
             if row is None:
                 raise NotFoundError("Dieser Koch ist für den angegebenen Mittwoch nicht eingetragen.")
+            has_expenses = connection.execute(
+                "SELECT 1 FROM expense WHERE cook_id = ? LIMIT 1", (cook_id,)
+            ).fetchone()
+            if has_expenses is not None:
+                raise ExpenseConflictError(
+                    "Dieser Koch hat noch Ausgaben erfasst. Bitte zuerst die Ausgaben löschen."
+                )
             connection.execute("DELETE FROM cook WHERE id = ? AND date = ?", (cook_id, valid_day.isoformat()))
             connection.commit()
         except BaseException:
@@ -190,6 +206,105 @@ class WednesdayService:
         except sqlite3.IntegrityError as exc:
             connection.rollback()
             raise InvalidInputError("Das Gericht konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def add_expense(self, day: date, amount: str, description: str, cook_id: str) -> int:
+        """Book one expense position; independent of the registration deadline."""
+        amount_cents = parse_amount_cents(amount)
+        if not isinstance(description, str):
+            raise InvalidInputError("Die Beschreibung muss Text sein.")
+        trimmed = description.strip()
+        if not 1 <= len(trimmed) <= 200 or "\r" in trimmed or "\n" in trimmed:
+            raise InvalidInputError("Die Beschreibung muss 1 bis 200 Zeichen in einer Zeile haben.")
+        if not isinstance(cook_id, str) or not re.fullmatch(r"[0-9]{1,18}", cook_id, re.ASCII):
+            raise InvalidInputError("Bitte wählen Sie, wer die Ausgabe ausgelegt hat.")
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            valid_day = validate_wednesday(day)
+            cook = connection.execute(
+                "SELECT id, display_name FROM cook WHERE id = ? AND date = ?",
+                (int(cook_id), valid_day.isoformat()),
+            ).fetchone()
+            if cook is None:
+                raise InvalidInputError("Ausgelegt von muss ein Koch dieses Mittwochs sein.")
+            connection.execute(
+                "INSERT OR IGNORE INTO wednesday(date) VALUES(?)", (valid_day.isoformat(),)
+            )
+            cursor = connection.execute(
+                """INSERT INTO expense(date, cook_id, paid_by_name, description, amount_cents)
+                   VALUES(?, ?, ?, ?, ?)""",
+                (valid_day.isoformat(), cook["id"], cook["display_name"], trimmed, amount_cents),
+            )
+            expense_id = cursor.lastrowid
+            connection.commit()
+            return expense_id
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise InvalidInputError("Die Ausgabe konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def remove_expense(self, day: date, expense_id: int) -> None:
+        if isinstance(expense_id, bool) or not isinstance(expense_id, int) or expense_id < 1:
+            raise InvalidInputError("Die Ausgaben-ID ist ungültig.")
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            valid_day = validate_wednesday(day)
+            deleted = connection.execute(
+                "DELETE FROM expense WHERE id = ? AND date = ?",
+                (expense_id, valid_day.isoformat()),
+            ).rowcount
+            if deleted != 1:
+                raise NotFoundError("Diese Ausgabe gehört nicht zum angegebenen Mittwoch.")
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def approve_overrun(self, day: date, approved_by: str, reason: str) -> None:
+        if not isinstance(approved_by, str) or not 1 <= len(approved_by.strip()) <= 80:
+            raise InvalidInputError("Der Name der genehmigenden Person muss 1 bis 80 Zeichen haben.")
+        if not isinstance(reason, str) or not 1 <= len(reason.replace("\r\n", "\n").strip()) <= 1000:
+            raise InvalidInputError("Die Begründung muss 1 bis 1000 Zeichen haben.")
+        approver = approved_by.strip()
+        trimmed_reason = reason.replace("\r\n", "\n").strip()
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            now = self.clock.now()
+            valid_day = validate_wednesday(day)
+            total = connection.execute(
+                "SELECT COALESCE(SUM(amount_cents), 0) FROM expense WHERE date = ?",
+                (valid_day.isoformat(),),
+            ).fetchone()[0]
+            if total <= BUDGET_CENTS:
+                raise ExpenseConflictError("Das Budget ist nicht überschritten; es gibt nichts zu genehmigen.")
+            approved_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            connection.execute(
+                """INSERT INTO budget_approval(date, approved_by, reason, approved_total_cents, approved_at)
+                   VALUES(?, ?, ?, ?, ?)
+                   ON CONFLICT(date) DO UPDATE SET
+                     approved_by = excluded.approved_by,
+                     reason = excluded.reason,
+                     approved_total_cents = excluded.approved_total_cents,
+                     approved_at = excluded.approved_at""",
+                (valid_day.isoformat(), approver, trimmed_reason, total, approved_at),
+            )
+            connection.commit()
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise InvalidInputError("Die Genehmigung konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
         except BaseException:
             connection.rollback()
             raise

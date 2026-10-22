@@ -16,3 +16,5 @@ playwright-report/
 *.sqlite3
 *.sqlite-*
 *.log
+.claude/kontext/
+.claude/settings.local.json

@@ -109,3 +109,9 @@ Nächster Bauauftrag AP5: Essen-An-/Abmeldung mit Ernährungsform und optionalem
 ## Fortschritt — 22.10.2026, nach AP5
 AP5 umgesetzt: Essen-An-/Abmeldung, Doppelnamensperre und Fristsperre für direkte POSTs. 30 neue Logik-/HTTP- und 6 neue Chromium-Fälle; insgesamt 175 Tests (154 Logik/HTTP, 21 Chromium). [Nachweis](11-ap5-qs-e2e.md).
 Nächster Bauauftrag AP6: Einkaufsansicht GET /wednesdays/{date}/shopping mit Gesamtzahl, disjunkten Ernährungszahlen und Hinweisliste mit Namen; Gegenprobe 2 alles + 1 vegetarisch + 1 vegan = 4, Koch ohne Anmeldung zählt nicht. Danach MS2 MUSS-Durchstich im Browser.
+
+## Änderung 1 — 22.10.2026
+Neues Blatt „Ausgaben & Buchhaltung“: A1–A5 MUSS, als AP9 (Budget/Ausgaben/Genehmigung, 40 min) und AP10 (Report/CSV, 30 min) eingeplant und umgesetzt; [Analyse](12-change-ausgaben.md). M1–M8 unverändert; AP6 Einkauf bleibt nächster offener MUSS-Baustein, danach AP7/AP8 mit A1–A5 in der Gesamtprobe.
+
+## Fortschritt — 22.10.2026, nach AP6
+AP6 umgesetzt: [Nachweis](14-ap6-qs-e2e.md). Alle MUSS-Bausteine M1–M8 sowie Änderung 1 technisch gebaut; MS2 MUSS-Durchstich technisch erreicht. Nächster Auftrag AP7: integrierte Gesamtprobe im Browser (Kalender → Koch → Gericht → Essen → Einkauf → Ausgaben → Report/CSV) mit echtem Prozessneustart, danach AP8 Abgabe.

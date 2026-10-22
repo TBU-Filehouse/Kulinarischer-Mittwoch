@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Einkauf {{ date_heading }} · Der kulinarische Mittwoch{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('calendar.wednesday_detail', day_value=day_value) }}">← Zum Mittwoch</a>
+  <section class="detail-hero" aria-labelledby="page-title">
+    <p class="eyebrow">Einkaufsübersicht</p>
+    <h1 id="page-title">{{ date_heading }}</h1>
+    {% if dish_title %}
+      <p>Gericht: <strong>{{ dish_title }}</strong>{% if dish_type %} · {{ dish_type }}{% endif %}</p>
+    {% else %}
+      <p class="muted">Das Gericht ist noch nicht eingetragen.</p>
+    {% endif %}
+  </section>
+
+  <div class="detail-grid">
+    <section class="info-card count-card" aria-labelledby="shopping-total-heading">
+      <h2 id="shopping-total-heading">Personen gesamt</h2>
+      <p class="count-number" id="shopping-total">{{ total }}</p>
+      <p class="muted">Nur Essen-Anmeldungen zählen; Köche ohne eigene Anmeldung nicht.</p>
+    </section>
+
+    <section class="info-card" aria-labelledby="shopping-diet-heading">
+      <h2 id="shopping-diet-heading">Nach Ernährungsform</h2>
+      <dl class="shopping-diets">
+        {% for key, label, count in diet_rows %}
+          <div><dt>{{ label }}</dt><dd id="shopping-{{ key }}">{{ count }}</dd></div>
+        {% endfor %}
+      </dl>
+    </section>
+
+    <section class="info-card" aria-labelledby="shopping-notes-heading">
+      <h2 id="shopping-notes-heading">Allergien und Hinweise</h2>
+      {% if notes %}
+        <ul class="shopping-notes">
+          {% for entry in notes %}
+            <li data-note-name="{{ entry.name }}"><strong>{{ entry.name }}:</strong> {{ entry.note }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Keine Hinweise.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

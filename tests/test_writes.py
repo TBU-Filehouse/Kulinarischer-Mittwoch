@@ -168,9 +168,10 @@ def test_direct_posts_at_deadline_are_blocked_and_forms_hidden(write_app,instant
             ('dish',{'title':'Curry','description':'Reis','dish_type':'vegan'}),
         ):
             assert client.post(f'/wednesdays/{day}/'+suffix,data={**data,'csrf_token':token}).status_code==409
-        parser=TokenParser()
-        parser.feed(client.get('/wednesdays/'+day).get_data(as_text=True))
-        assert parser.token is None
+        html=client.get('/wednesdays/'+day).get_data(as_text=True)
+        # Change 1: expense forms stay available after the deadline; M6 forms must not.
+        for suffix in ('cooks','dish','registrations',f'cooks/{cook[0]}/remove'):
+            assert f'action="/wednesdays/{day}/{suffix}"' not in html
     assert (rows(app,'wednesday'),rows(app,'cook'))==expected
 
 

@@ -91,6 +91,16 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
             "SELECT id, display_name, diet, note FROM registration WHERE date = ? ORDER BY created_at, id",
             (day,),
         ).fetchall()
+        expense_entries = connection.execute(
+            """SELECT id, description, amount_cents, paid_by_name FROM expense
+               WHERE date = ? ORDER BY id""",
+            (day,),
+        ).fetchall()
+        approval = connection.execute(
+            """SELECT approved_by, reason, approved_total_cents, approved_at
+               FROM budget_approval WHERE date = ?""",
+            (day,),
+        ).fetchone()
         return {
             "dish_title": wednesday["dish_title"] if wednesday else None,
             "dish_description": wednesday["dish_description"] if wednesday else None,
@@ -102,6 +112,69 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
             ],
             "registration_count": registration_count,
             "registration_entries": [dict(row) for row in registration_entries],
+            "expense_entries": [dict(row) for row in expense_entries],
+            "expense_total_cents": sum(row["amount_cents"] for row in expense_entries),
+            "approval": dict(approval) if approval else None,
         }
     finally:
         connection.close()
+
+
+def get_month_report_data(path: str | Path, first_day: date, last_day: date) -> dict:
+    """Read expenses, approvals and cooks of a month without writing anything."""
+    connection = connect_database(path)
+    try:
+        bounds = (first_day.isoformat(), last_day.isoformat())
+        expenses = connection.execute(
+            """SELECT id, date, description, amount_cents, paid_by_name FROM expense
+               WHERE date BETWEEN ? AND ? ORDER BY date, id""",
+            bounds,
+        ).fetchall()
+        approvals = connection.execute(
+            """SELECT date, approved_by, reason, approved_total_cents FROM budget_approval
+               WHERE date BETWEEN ? AND ?""",
+            bounds,
+        ).fetchall()
+        cooks = connection.execute(
+            "SELECT date, display_name FROM cook WHERE date BETWEEN ? AND ? ORDER BY date, id",
+            bounds,
+        ).fetchall()
+        return {
+            "expenses": [dict(row) for row in expenses],
+            "approvals": {row["date"]: dict(row) for row in approvals},
+            "cooks": [(row["date"], row["display_name"]) for row in cooks],
+        }
+    finally:
+        connection.close()
+
+
+def get_shopping_data(path: str | Path, wednesday_date: date) -> dict:
+    """Read registrations for the shopping overview without creating rows.
+
+    One query feeds total, per-diet counts and notes, so they cannot disagree.
+    """
+    day = wednesday_date.isoformat()
+    connection = connect_database(path)
+    try:
+        dish = connection.execute(
+            "SELECT dish_title, dish_type FROM wednesday WHERE date = ?", (day,)
+        ).fetchone()
+        registrations = connection.execute(
+            "SELECT display_name, diet, note FROM registration WHERE date = ? ORDER BY created_at, id",
+            (day,),
+        ).fetchall()
+    finally:
+        connection.close()
+    counts = {"alles": 0, "vegetarisch": 0, "vegan": 0}
+    for row in registrations:
+        counts[row["diet"]] += 1
+    return {
+        "dish_title": dish["dish_title"] if dish else None,
+        "dish_type": dish["dish_type"] if dish else None,
+        "total": len(registrations),
+        "counts": counts,
+        "notes": [
+            {"name": row["display_name"], "note": row["note"]}
+            for row in registrations if row["note"]
+        ],
+    }
