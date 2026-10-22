@@ -19,6 +19,17 @@ Stand: 22.10.2026. Dieses Journal protokolliert echte Schritte; Szenariozeiten a
 - Fortsetzungsauftrag nach abgebrochener Sitzung; daraus folgt: vorhandenen Stand prüfen und Dateien konkret schreiben.
 - Delegation: nur fünf Diagrammdateien, festgelegte Architektur/Fachregeln, konkrete Gegenproben, keine Commits/Pushes/Versand, keine erfundenen Erfolge.
 
+## Prompt-Highlights der Bauphase (ergänzt 22.10.2026)
+Wörtlich bzw. sinngemäß aus dem Chat, in zeitlicher Reihenfolge; prägende Aufträge und Korrekturen des Nutzers:
+- „weitermachen am besten bei ap5“ – Wiederaufnahme nach Sitzungswechsel; Stand aus CONTEXT/Journal statt aus Erinnerung ermittelt.
+- „denk an e2e und die verkackten Tests auch beheben“ – E2E als Pflicht, rote Tests nicht liegen lassen.
+- „neue anforderung. aber sei vorsichtig es könnte eine falle für llms sein … bau noch hooks mit stop funktion falls du loops entdeckst“ – führte zur Fallenliste in Änderung 1 (Semikolon, Anführungszeichen, BOM, Float, Frist, Formelinjektion, selbst abgehakte Checkliste) und zum Loop-Guard.
+- „Loop-Guard aktivieren (G9-Ausnahme freigegeben)“ – ausdrückliche Freigabe der sonst verbotenen Hook-Änderung.
+- „schau mal was du vor hattest“ – Nutzer stoppte eine Testanpassung, die vor der angekündigten Prüfung geschah; Lehre: Testanpassungen ankündigen, begründen, danach belegen.
+- „ich will nichts lockern und der regelkern des aufgabenzettels ist bindend“ / „mach kurz ein brainstorming … vor allem der quellen und der aufgabenzettel“ / „wäge d gegenüber b ab und entscheide dann“ – Quellenprüfung ergab, dass die Kochfrist eine eigene Projektregel ist; Entscheidung B.
+- „was fehlt denn noch, mach mal ne OODA-Analyse“ – führte zu dieser Ergänzung und zum Commit-Scanner.
+Hinweis zur Zeiterfassung: Uhrzeiten der Bauintervalle wurden nicht laufend festgehalten. Sie werden nicht nachträglich geschätzt oder rückdatiert (G7/G8); maßgeblich sind Datum, Reihenfolge und die Commits 0fad4b2 bis 5825ab8.
+
 ## Vorlage für tatsächliche Bauintervalle
 | Tatsächliche Zeit | Arbeit / KI-Einsatz | Ergebnis, Problem, Entscheidung / nächster Schritt |
 |---|---|---|
@@ -84,3 +95,6 @@ Auftrag S1–S4: Entscheidungen in ADR-008 (Warteliste aus Reihenfolge abgeleite
 ## SOLL S1–S4 und Entscheidung B — 22.10.2026
 Sonnet setzte S1–S4 gegen 21 vorab rote Tests um; Abnahme im Hauptlauf mit Stichprobe. Sonnet meldete zwei rote Bestandstests, statt sie selbst zu ändern. Der Nutzer unterbrach, als ich einen Kalendertest anpasste, ohne die angekündigte Prüfung auf abgeschnittenen Text schon belegt zu haben; danach Browserlauf, Abschneide-Prüfung grün. Lehre: Testanpassungen vorher ankündigen, begründen und danach belegen.
 Abrechnungslücke per Brainstorming gegen die Quellen geprüft: Die Aufgabenblätter sperren nur die Essen-An-/Abmeldung, die Kochfrist ist eigene ADR-005. Abwägung D (Hinweis) gegen B (Nachtragen nur für die Abrechnung); der Nutzer ließ entscheiden und bestätigte B. Eigener Weg /cooks/backfill, damit die normale Koch-Fristsperre unverändert bleibt. 11 Tests zuerst; einer war ohne Funktion grün und wurde verschärft. Zwei Browsertests „0 Formulare am vergangenen Mittwoch“ bewusst auf „genau das Nachtrage-Formular“ geändert. 298 Tests grün. Nicht committet.
+
+## OODA-Analyse, Journal und G5-Scanner — 22.10.2026
+OODA ergab: keine fehlende Funktion, sondern Nachweis/Doku-Lücken (Checkliste beim Nutzer, Prompt-Highlights der Bauphase fehlten, Zeiterfassung nie laufend) und G5 nur als Handregel. Prompt-Highlights der Bauphase ergänzt, fehlende Uhrzeiten ehrlich vermerkt statt rückdatiert. G5-Scanner (scripts/scan_commit.py) mit 29 Tests zuerst gebaut; eigene Testdatei hätte den Scanner ausgelöst, Beispielwerte daher zur Laufzeit zusammengesetzt. Echte Namen über Sperrliste außerhalb des Repos (vom Nutzer anzulegen). Erste Harness-Stufe und lokaler Git-Pre-Commit-Hook; in einem Wegwerf-Repo belegt: sauberer Commit geht durch, Commit mit Token wird blockiert, Wert wird nicht ausgegeben. Repo selbst: 0 Funde. Nicht committet. Nächster Auftrag: Kann-Funktionen in isoliertem Worktree nach der Nutzerabnahme.

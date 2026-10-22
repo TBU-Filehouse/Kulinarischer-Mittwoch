@@ -13,4 +13,4 @@ G10: Bei Delegation explizit verfügbares günstigeres Modell und begrenzte Date
 Diese Datei ist eine Anweisungsebene. App-Tests, Scanner, Harness und CI sind geplant; ihre bloße Erwähnung bedeutet nicht, dass sie bereits eingerichtet sind.
 
 G11: Nutzerpräferenz ab22.10.2026: Zu Arbeitsbeginn Superpowers using-superpowers und die fachlich passenden ECC-Skills lesen und anwenden; aktuelle verfügbare Werkzeuge maßgeblich. Keine Installation oder Hook-/Settingsänderung allein daraus ableiten. Nach Implementierung frische Gesamttests und Review gegen den Auftrag; frühere Arbeit nicht rückwirkend als Skill-/TDD-Nachweis ausgeben.
-Aktuell mechanisch eingerichtet: lokaler Harness mit Abhängigkeits-, Logik/HTTP- und Chromium-E2E-Stufe. Der ursprüngliche Hinweis oben auf geplante Prüfungen ist durch diesen Stand ergänzt; Hooks/CI bleiben offen.
+Aktuell mechanisch eingerichtet: lokaler Harness mit G5-Scan-, Abhängigkeits-, Logik/HTTP- und Chromium-E2E-Stufe; G5-Scanner zusätzlich als lokaler Git-Pre-Commit-Hook (pro Klon einzurichten, siehe README). Der ursprüngliche Hinweis oben auf geplante Prüfungen ist durch diesen Stand ergänzt; Hooks/CI bleiben offen.

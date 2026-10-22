@@ -51,7 +51,8 @@ def main():
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     (ROOT / 'test-results').mkdir(exist_ok=True)
     before = source_hash()
-    steps = [run_step('dependencies', [sys.executable, '-m', 'pip', 'check']),
+    steps = [run_step('g5_scan', [sys.executable, str(ROOT / 'scripts' / 'scan_commit.py')]),
+             run_step('dependencies', [sys.executable, '-m', 'pip', 'check']),
              run_step('logic_http', [sys.executable, '-m', 'pytest', '-q', 'tests',
                        '--ignore=tests/e2e', '--tb=short', '--junitxml=test-results/logic-http.xml']),
              run_step('browser_e2e', [sys.executable, '-m', 'pytest', '-q', 'tests/e2e',

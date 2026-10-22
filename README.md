@@ -30,8 +30,16 @@ Einmalig die Entwicklungsabhängigkeiten und den Testbrowser installieren, dann 
 .\.venv\Scripts\python.exe -m playwright install chromium
 .\.venv\Scripts\python.exe scripts/check.py
 ```
-Drei getrennte Stufen (Abhängigkeiten, Logik/HTTP, Chromium-E2E), Exit 1 bei Fehlern, Bericht `.harness/result.json` mit Quellstand-Hash. **298 Tests**, darunter 29 Browserfälle und eine Gesamtprobe mit echtem Neustart von `python -m app`. Tests verwenden ausschließlich temporäre Datenbanken; `data/app.db` wird nie beschrieben. **Technischer Erfolg ist keine Produktabnahme.**
+Vier getrennte Stufen (G5-Scan, Abhängigkeiten, Logik/HTTP, Chromium-E2E), Exit 1 bei Fehlern, Bericht `.harness/result.json` mit Quellstand-Hash. **327 Tests**, darunter 29 Browserfälle und 29 Scanner-Tests und eine Gesamtprobe mit echtem Neustart von `python -m app`. Tests verwenden ausschließlich temporäre Datenbanken; `data/app.db` wird nie beschrieben. **Technischer Erfolg ist keine Produktabnahme.**
 Welche Anforderung wo geprüft ist: [Anforderungs-/Abnahmematrix](docs/15-ap7-gesamtprobe.md).
+
+**Commit-Schutz (G5):** `scripts/scan_commit.py` sucht in allen Dateien, die git aufnehmen würde, nach Zugangsdaten, persönlichen Pfaden, E-Mail-Adressen, lokalen Datenbanken/Kontextdateien und echten Namen. Die Namensliste liegt bewusst außerhalb des Repositorys in `.Codex/kontext/scan-denylist.txt` (ein Name pro Zeile, wird ignoriert); ohne diese Datei wird die Namensprüfung übersprungen und das gemeldet. Als Git-Hook einmalig pro Klon einrichten (Git Bash):
+```bash
+printf '#!/bin/sh
+root="$(git rev-parse --show-toplevel)"
+exec "$root/.venv/Scripts/python.exe" "$root/scripts/scan_commit.py"
+' > .git/hooks/pre-commit
+```
 
 ## Loop-Guard für Agentensitzungen
 `.claude/settings.json` aktiviert einen PreToolUse-Hook (`scripts/hooks/loop_guard.py`), der wiederholte Werkzeugaufrufe ohne Fortschritt und nie endende Vordergrundbefehle stoppt. Abschalten mit `KUMI_LOOP_GUARD=off`. Details: [docs/13-loop-guard.md](docs/13-loop-guard.md).

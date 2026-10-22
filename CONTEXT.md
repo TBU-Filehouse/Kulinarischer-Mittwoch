@@ -75,3 +75,6 @@ Abgabestand: README-Start in sauberem Ordner geprüft, Checkliste als Abnahmepro
 
 ## Umsetzungsstand SOLL — 22.10.2026
 S1–S4 gebaut (ADR-008), Abrechnungslücke mit Entscheidung B geschlossen (ADR-005 Nachtrag). Nachweis docs/17-soll-qs.md, 298 Tests grün (269 Logik/HTTP, 29 Chromium). Der Nutzer hat den MUSS-Umfang mündlich als funktionierend gemeldet; die Checkliste inklusive SOLL füllt der Nutzer aus. Nicht committet.
+
+## QS-Stand G5 — 22.10.2026
+G5 jetzt mechanisch: scripts/scan_commit.py als erste Harness-Stufe und lokaler Pre-Commit-Hook; Sperrliste echter Namen in .Codex/kontext/scan-denylist.txt (vom Nutzer anzulegen). Nächster Auftrag laut Nutzer: Kann-Funktionen C1–C5 in isoliertem Worktree, Merge erst nach Freigabe. Nicht committet.
