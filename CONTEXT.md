@@ -81,3 +81,6 @@ G5 jetzt mechanisch: scripts/scan_commit.py als erste Harness-Stufe und lokaler 
 
 ## Abnahme — 22.10.2026
 Checkliste nach ADR-009 durch das Modell mit Nachweis abgearbeitet: 24/25 Haken, offen D4 (Sperrliste echter Namen). Excel-Doppelklick belegt. Abnahmelauf scripts/abnahme_lauf.py. Ergebnisfeld/Unterschrift bleibt der Person. C1–C5 nicht umgesetzt; geplant in isoliertem Worktree.
+
+## Kann C1–C3 — 22.10.2026
+C1 .ics-Export, C3 Rezept, C2 Bewertung im isolierten Worktree (Branch feat/kann-c1-c3) gebaut, nach Nutzerfreigabe in main gemergt (db3a966). Harness auf main: 349 Logik/HTTP + 31 Chromium-E2E bestanden. Neue Tabellen recipe/rating nur per CREATE TABLE IF NOT EXISTS; Bewertung ist bewusste Ausnahme zu S4 (ADR-010). C4/C5 nicht gebaut (Versand-/Betriebsklärung fehlt). Offen: Produktabnahme C1–C3, Bewertung im Browser ungetestet, .ics-Import in echten Kalender nicht ausprobiert, D4.

@@ -1,7 +1,7 @@
 # Der kulinarische Mittwoch
 Lokale WebApp für das gemeinsame Mittwochsessen am Standort Hamburg: wer kocht, was es gibt, wer mitisst, was eingekauft werden muss und was es gekostet hat.
 
-**Stand 22.10.2026: alle MUSS-Anforderungen M1–M8, Änderung 1 (Ausgaben & Buchhaltung) und SOLL S1–S4 gebaut und technisch geprüft. Abnahme-Checkliste am 22.10.2026 in der laufenden App durchgespielt: 24 von 25 Punkten mit Nachweis abgehakt (ADR-009), offen nur D4 (Sperrliste echter Namen fehlt)** ([Abnahme-Checkliste](03-abnahme-checkliste.md)). Die Kann-Anforderungen C1–C5 sind nicht umgesetzt.
+**Stand 22.10.2026: alle MUSS-Anforderungen M1–M8, Änderung 1 (Ausgaben & Buchhaltung) und SOLL S1–S4 gebaut und technisch geprüft. Abnahme-Checkliste am 22.10.2026 in der laufenden App durchgespielt: 24 von 25 Punkten mit Nachweis abgehakt (ADR-009), offen nur D4 (Sperrliste echter Namen fehlt)** ([Abnahme-Checkliste](03-abnahme-checkliste.md)). Kann-Anforderungen C1 (.ics-Export), C2 (Bewertung) und C3 (Rezept) gebaut und technisch geprüft, ohne Produktabnahme; C4 (Erinnerungsmail) und C5 (Firmennetz-Deployment) bewusst nicht gebaut ([ADR-010](docs/adr/ADR-010-kann-umfang.md), [QS](docs/18-kann-qs.md)).
 
 ## Start unter Windows
 Voraussetzung: Python mit pip (geprüft mit Python 3.14.7); Internet nur für die erstmalige Installation. Aus diesem Projektordner:
