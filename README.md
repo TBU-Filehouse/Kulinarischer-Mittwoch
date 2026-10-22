@@ -47,3 +47,5 @@ Der Testserver verwendet eine eigene temporäre Datenbank und feste Testzeit. Ke
 
 ## AP4 und Formularschutz
 [AP4-QS-Nachweis](docs/10-ap4-qs-e2e.md): 124 Logik-/HTTP-Tests plus 15 Chromium-E2E-Fälle. Formularänderungen nutzen SQLite-Schreibtransaktionen, serverseitige Fristprüfung und Session-CSRF-Token. Nur Loopback-Hosts sind zugelassen; HTTP-Formulare sind auf 16 KiB begrenzt. Ohne KUMI_SECRET_KEY entsteht beim App-Neustart ein neuer zufälliger Sitzungsschlüssel: alte Formulare dann neu laden. Daten bleiben erhalten. Dies fügt keinen Login hinzu.
+
+Repository: [TBU-Filehouse/Kulinarischer-Mittwoch](https://github.com/TBU-Filehouse/Kulinarischer-Mittwoch) (privat).

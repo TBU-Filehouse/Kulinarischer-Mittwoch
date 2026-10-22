@@ -52,3 +52,6 @@ Korrigiert nach Gegenproben: Unicode-CSRF-TypeError, Detailroute verschluckte GE
 
 ## Repository-Sicherung — 22.10.2026
 Nutzer stellte https://github.com/tib019/Kulinarischer-Mittwoch bereit. Repository war leer und öffentlich. Lokale Git-Sicherung wird vorbereitet; CLI-Identität TBU-Filehouse hat aktuell nur READ. Push ist deshalb offen, bis Schreibzugriff bereitsteht. Lokale Daten, Sitzungskontext, virtuelle Umgebung und Testartefakte bleiben ausgeschlossen. Rechnerbezogene absolute Quellenpfade sind für die öffentliche Dokumentation neutralisiert; lokale Originalnotiz liegt nur im ignorierten Kontextordner.
+
+## Repository-Ziel gewechselt — 22.10.2026
+Nutzer bat wegen fehlender Schreibrechte bei tib019 um TBU-Filehouse. Privates Repository TBU-Filehouse/Kulinarischer-Mittwoch erstellt und lokale Origin-URL umgestellt. Erster gesicherter Code-Stand bleibt AP4 mit 139 Tests; vor dem Push wird der QS-Bericht nach diesen Dokumentänderungen erneuert.

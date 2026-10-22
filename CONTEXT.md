@@ -54,3 +54,6 @@ Koch-Ein-/Austragen und Gerichtbearbeitung gebaut. WednesdayService nutzt BEGIN 
 Session-CSRF, Originprüfung, zufälliger Schlüssel, HttpOnly/Lax-Cookie, Loopback-Hosts und 16-KiB-Requestgrenze umgesetzt. Keine neuen Laufzeitabhängigkeiten. Nachweis: docs/10-ap4-qs-e2e.md, Entscheidung ADR-006.
 139 Tests: 124 Logik/HTTP und 15 Chromium. Neue Gegenproben für parallele Buchungen, Frist während Lock-Warten, Rollback, CSRF/Origin/Host/Unicode/Grenzgrößen und echte Browserformulare. Reviewbefund zu großen Requests behoben und nachgeprüft; Windows-Unicodefehler im Harness mit Regression korrigiert.
 M2/M3 technisch nachgewiesen, Gesamtproduktabnahme offen. Nächster Bauabschnitt AP5. Nutzer hat Repository tib019/Kulinarischer-Mittwoch zur Fortschrittssicherung bereitgestellt; geprüften Stand nach Ausschluss lokaler Daten dort sichern. Keine Hooks/Settings geändert.
+
+## Repository-Ziel — 22.10.2026
+Auf Nutzerwunsch liegt die Fortschrittssicherung nun im privaten Repository TBU-Filehouse/Kulinarischer-Mittwoch. Origin ist entsprechend gesetzt. Das zuvor bereitgestellte Repository tib019/Kulinarischer-Mittwoch bleibt unverändert. Lokale Daten, Testartefakte und Sitzungskontext bleiben ausgeschlossen.
