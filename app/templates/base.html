@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Der kulinarische Mittwoch{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('calendar.index') }}">Der kulinarische Mittwoch</a>
+      <span class="brand-note">Gemeinsam kochen und essen</span>
+    </header>
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">Ein lokaler Kalender für unser gemeinsames Essen.</footer>
+  </body>
+</html>

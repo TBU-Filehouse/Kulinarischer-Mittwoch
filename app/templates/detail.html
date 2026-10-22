@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ date_heading }} · Der kulinarische Mittwoch{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('calendar.index', month=month_value) }}">← Zum Monatskalender</a>
+  <section class="detail-hero" aria-labelledby="page-title">
+    <p class="eyebrow">Unser gemeinsames Essen</p>
+    <h1 id="page-title">{{ date_heading }}</h1>
+    <span class="status-pill {{ 'closed' if locked else 'open' }}">{{ 'Anmeldung geschlossen' if locked else 'Anmeldung offen' }}</span>
+  </section>
+
+  {% with messages = get_flashed_messages(category_filter=['success']) %}
+    {% for message in messages %}<p class="success-message" role="status">{{ message }}</p>{% endfor %}
+  {% endwith %}
+  {% if error_message %}<p class="form-error" role="alert">{{ error_message }}</p>{% endif %}
+  {% if locked %}<p class="closed-note" role="status">Die Frist ist geschlossen. Koch- und Gerichtsdaten bleiben lesbar.</p>{% endif %}
+
+  <div class="detail-grid">
+    <section class="info-card dish-card" aria-labelledby="dish-heading">
+      <h2 id="dish-heading">Gericht</h2>
+      {% if title %}
+        <h3>{{ title }}</h3>
+        {% if dish_type %}<p class="dish-type">{{ dish_type }}</p>{% endif %}
+        {% if description %}<p class="description">{{ description }}</p>{% endif %}
+      {% else %}
+        <p class="muted">Das Gericht ist noch nicht eingetragen.</p>
+      {% endif %}
+      {% if not locked %}
+        <form class="write-form dish-form" method="post" action="{{ url_for('calendar.save_dish', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="dish-title">Gerichttitel</label>
+          <input id="dish-title" name="title" type="text" maxlength="120" required value="{{ form_title or '' }}">
+          <label for="dish-description">Beschreibung</label>
+          <textarea id="dish-description" name="description" maxlength="1000" required rows="3">{{ form_description or '' }}</textarea>
+          <label for="dish-type">Kennzeichnung</label>
+          <select id="dish-type" name="dish_type" required>
+            <option value="" disabled {{ 'selected' if not selected_dish_type else '' }}>Bitte wählen</option>
+            <option value="vegan" {{ 'selected' if selected_dish_type == 'vegan' else '' }}>Vegan</option>
+            <option value="vegetarisch" {{ 'selected' if selected_dish_type == 'vegetarisch' else '' }}>Vegetarisch</option>
+            <option value="fleisch_fisch" {{ 'selected' if selected_dish_type == 'fleisch_fisch' else '' }}>Fleisch oder Fisch</option>
+          </select>
+          <button type="submit">Gericht speichern</button>
+        </form>
+      {% endif %}
+    </section>
+
+    <section class="info-card" aria-labelledby="cooks-heading">
+      <h2 id="cooks-heading">Köche</h2>
+      {% if cook_entries %}
+        <ul class="cook-list">
+          {% for cook in cook_entries %}
+            <li>
+              <span>{{ cook.display_name }}</span>
+              {% if not locked %}
+                <form class="inline-form" method="post" action="{{ url_for('calendar.remove_cook', day_value=day_value, cook_id=cook.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="secondary-button" type="submit" aria-label="{{ cook.display_name }} als Koch austragen">Austragen</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Für diesen Mittwoch sind noch keine Köche eingetragen.</p>
+      {% endif %}
+      {% if not locked %}
+        {% if cook_entries|length >= 2 %}<p class="muted">Alle zwei Kochplätze sind belegt.</p>{% else %}
+          <form class="write-form cook-form" method="post" action="{{ url_for('calendar.add_cook', day_value=day_value) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="cook-name">Dein Name</label>
+            <input id="cook-name" name="name" type="text" maxlength="80" required value="{{ form_cook_name or '' }}">
+            <button type="submit">Als Koch eintragen</button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    <section class="info-card count-card" aria-labelledby="registrations-heading">
+      <h2 id="registrations-heading">Essen-Anmeldungen</h2>
+      <p class="count-number">{{ registration_count }}</p>
+      <p class="muted">{{ 'Person' if registration_count == 1 else 'Personen' }} angemeldet</p>
+    </section>
+
+    <section class="info-card deadline-card" aria-labelledby="deadline-heading">
+      <h2 id="deadline-heading">Anmeldeschluss</h2>
+      <p class="deadline-time">{{ deadline_heading }}</p>
+      <p class="muted">Zeitzone: Europe/Berlin</p>
+    </section>
+  </div>
+  <p class="next-step-note">Essen-Anmeldung folgt im nächsten Schritt.</p>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ month_name }} {{ year }} · Der kulinarische Mittwoch{% endblock %}
+{% block content %}
+  <section class="intro-card" aria-labelledby="page-title">
+    <p class="eyebrow">Unser Speiseplan</p>
+    <h1 id="page-title">{{ month_name }} {{ year }}</h1>
+    <p>Jeder grüne Mittwoch führt zur Planung des gemeinsamen Essens.</p>
+  </section>
+
+  <section class="calendar-card" aria-label="Monatskalender">
+    <div class="calendar-toolbar">
+      <nav class="month-navigation" aria-label="Monatsnavigation">
+        {% if previous_month %}
+          <a class="nav-link" href="{{ url_for('calendar.index', month=previous_month) }}" aria-label="Vormonat">← <span>Vormonat</span></a>
+        {% else %}
+          <span class="nav-link disabled" aria-disabled="true">← <span>Vormonat</span></span>
+        {% endif %}
+        <a class="today-link" href="{{ url_for('calendar.index', month=today_month) }}">Heute</a>
+        {% if next_month %}
+          <a class="nav-link next-link" href="{{ url_for('calendar.index', month=next_month) }}" aria-label="Folgemonat"><span>Folgemonat</span> →</a>
+        {% else %}
+          <span class="nav-link next-link disabled" aria-disabled="true"><span>Folgemonat</span> →</span>
+        {% endif %}
+      </nav>
+      <form class="month-picker" method="get" action="{{ url_for('calendar.index') }}">
+        <label for="month">Monat auswählen</label>
+        <input id="month" name="month" type="month" value="{{ month_value }}">
+        <button type="submit">Anzeigen</button>
+      </form>
+    </div>
+
+    <div class="calendar-scroll" role="region" aria-label="Kalender {{ month_name }} {{ year }}" tabindex="0">
+      <table class="calendar-grid">
+        <thead>
+          <tr>{% for weekday in weekdays %}<th scope="col">{{ weekday }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for week in weeks %}
+            <tr>
+              {% for cell in week %}
+                {% if cell is none %}
+                  <td class="empty-day" aria-hidden="true"></td>
+                {% elif cell.wednesday %}
+                  <td class="calendar-day wednesday" data-date="{{ cell.iso }}">
+                    <a class="day-link" href="{{ cell.link }}" aria-label="Mittwoch, {{ '%02d'|format(cell.day) }}.{{ '%02d'|format(month) }}.{{ '%04d'|format(year) }}">
+                      <span class="day-number">{{ cell.day }}</span>
+                      <span class="day-name">Mittwoch</span>
+                      <span class="day-detail"><strong>Köche</strong> {{ cell.cooks | join(', ') if cell.cooks else 'Noch offen' }}</span>
+                      <span class="day-detail"><strong>Gericht</strong> {{ cell.dish_title or 'Noch offen' }}</span>
+                      <span class="day-detail"><strong>Anmeldungen</strong> {{ cell.registration_count }}</span>
+                    </a>
+                  </td>
+                {% else %}
+                  <td class="calendar-day ordinary-day"><span class="day-number">{{ cell.day }}</span></td>
+                {% endif %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="calendar-hint"><span class="legend-dot" aria-hidden="true"></span> Mittwoch mit Planungsdetails</p>
+  </section>
+{% endblock %}
