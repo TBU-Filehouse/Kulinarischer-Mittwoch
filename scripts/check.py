@@ -62,7 +62,7 @@ def main():
     success = all(step['exit_code'] == 0 for step in steps) and before == after
     report = {
         'zeitpunkt_utc': datetime.now(timezone.utc).isoformat(),
-        'umfang': 'AP1-AP8 und Änderung 1 inkl. Gesamtprobe mit Prozessneustart, Chromium-E2E; keine Gesamtproduktabnahme',
+        'umfang': 'AP1-AP8, Änderung 1 und SOLL S1-S4 inkl. Gesamtprobe mit Prozessneustart, Chromium-E2E; keine Gesamtproduktabnahme',
         'quellstand_sha256': before, 'quellstand_sha256_nachher': after,
         'quellstand_unveraendert': before == after,
         'technisch_erfolgreich': success, 'produkt_abgenommen': False, 'schritte': steps,
@@ -73,7 +73,7 @@ def main():
     for step in steps:
         print(f"{step['name']}: Exit {step['exit_code']}")
         print(step['ausgabe'].strip())
-    print('AP1-AP8 und Aenderung 1 technisch erfolgreich: ' + str(success))
+    print('AP1-AP8, Aenderung 1, SOLL S1-S4 technisch erfolgreich: ' + str(success))
     print('Produktabnahme NICHT BELEGT; technischer Erfolg ist keine Abnahme.')
     return 0 if success else 1
 

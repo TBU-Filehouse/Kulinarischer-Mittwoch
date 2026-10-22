@@ -177,3 +177,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex="0"]:focus
 .shopping-diets dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .shopping-notes { margin: 0; padding-left: 1.25rem; }
 .shopping-notes li { padding-block: .25rem; overflow-wrap: anywhere; }
+
+/* SOLL S1-S4: cook status, waitlist, cancellation, history */
+.status-pill.cancelled { background: #f6dcdc; color: #7a1f1f; }
+.cancelled-note, .past-note { border-radius: 10px; padding: .75rem 1rem; overflow-wrap: anywhere; }
+.cancelled-note { background: #f6dcdc; color: #7a1f1f; }
+.cook-status { font-weight: 700; margin: .25rem 0; }
+.day-status { display: inline-block; margin-top: .25rem; font-size: .72rem; font-weight: 700; overflow-wrap: anywhere; }
+.day-status.status-open { color: #205632; }
+.day-status.status-closed { color: #754719; }
+.day-status.status-past { color: #5c5c5c; }
+.day-status.status-cancelled { color: #7a1f1f; }
+.calendar-day .cook-status { font-weight: 700; }
+.waitlist-badge { font-size: .85rem; font-weight: 700; color: #754719; background: #f3e9dc; border-radius: 999px; padding: .1rem .55rem; }
+.registration-list li[data-registration-status="waitlisted"] .registration-name { font-weight: 400; }
+.portions-form, .cancel-form { margin-top: 1rem; }
+.cancel-form textarea, .portions-form input { max-width: 100%; box-sizing: border-box; }

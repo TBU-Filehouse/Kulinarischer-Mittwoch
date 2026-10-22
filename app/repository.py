@@ -33,6 +33,18 @@ def initialize_database(path: str | Path) -> None:
         connection.close()
 
 
+def _confirmed_count(total: int, limit: int | None) -> int:
+    """Confirmed registrations are the first `limit` ones; no limit confirms everyone."""
+    return total if limit is None else min(total, limit)
+
+
+def _portion_limit(connection: sqlite3.Connection, day: str) -> int | None:
+    row = connection.execute(
+        "SELECT max_portions FROM portion_limit WHERE date = ?", (day,)
+    ).fetchone()
+    return row["max_portions"] if row else None
+
+
 def get_calendar_entries(path: str | Path, first_day: date, last_day: date) -> dict[str, dict]:
     """Read planned details and independent counts for persisted dates in a range.
 
@@ -44,7 +56,9 @@ def get_calendar_entries(path: str | Path, first_day: date, last_day: date) -> d
     try:
         rows = connection.execute(
             """SELECT w.date, w.dish_title, w.dish_description, w.dish_type,
-                      (SELECT COUNT(*) FROM registration r WHERE r.date = w.date) AS registration_count
+                      (SELECT COUNT(*) FROM registration r WHERE r.date = w.date) AS registration_count,
+                      (SELECT max_portions FROM portion_limit p WHERE p.date = w.date) AS max_portions,
+                      EXISTS(SELECT 1 FROM cancellation c WHERE c.date = w.date) AS cancelled
                FROM wednesday w WHERE w.date BETWEEN ? AND ? ORDER BY w.date""",
             (first_day.isoformat(), last_day.isoformat()),
         ).fetchall()
@@ -61,7 +75,8 @@ def get_calendar_entries(path: str | Path, first_day: date, last_day: date) -> d
                 "dish_description": row["dish_description"],
                 "dish_type": row["dish_type"],
                 "cooks": cooks_by_date.get(row["date"], []),
-                "registration_count": row["registration_count"],
+                "registration_count": _confirmed_count(row["registration_count"], row["max_portions"]),
+                "cancelled": bool(row["cancelled"]),
             }
             for row in rows
         }
@@ -84,9 +99,10 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
         cook_entries = connection.execute(
             "SELECT id, display_name FROM cook WHERE date = ? ORDER BY id", (day,)
         ).fetchall()
-        registration_count = connection.execute(
-            "SELECT COUNT(*) FROM registration WHERE date = ?", (day,)
-        ).fetchone()[0]
+        max_portions = _portion_limit(connection, day)
+        cancellation = connection.execute(
+            "SELECT reason FROM cancellation WHERE date = ?", (day,)
+        ).fetchone()
         registration_entries = connection.execute(
             "SELECT id, display_name, diet, note FROM registration WHERE date = ? ORDER BY created_at, id",
             (day,),
@@ -101,6 +117,16 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
                FROM budget_approval WHERE date = ?""",
             (day,),
         ).fetchone()
+        entries = [dict(row) for row in registration_entries]
+        waitlist_position = 0
+        for index, entry in enumerate(entries):
+            if max_portions is None or index < max_portions:
+                entry["status"] = "confirmed"
+                entry["waitlist_position"] = None
+            else:
+                waitlist_position += 1
+                entry["status"] = "waitlisted"
+                entry["waitlist_position"] = waitlist_position
         return {
             "dish_title": wednesday["dish_title"] if wednesday else None,
             "dish_description": wednesday["dish_description"] if wednesday else None,
@@ -110,8 +136,12 @@ def get_wednesday_details(path: str | Path, wednesday_date: date) -> dict:
                 {"id": row["id"], "display_name": row["display_name"]}
                 for row in cook_entries
             ],
-            "registration_count": registration_count,
-            "registration_entries": [dict(row) for row in registration_entries],
+            "registration_count": len(entries) - waitlist_position,
+            "waitlist_count": waitlist_position,
+            "registration_entries": entries,
+            "max_portions": max_portions,
+            "cancelled": cancellation is not None,
+            "cancellation_reason": cancellation["reason"] if cancellation else None,
             "expense_entries": [dict(row) for row in expense_entries],
             "expense_total_cents": sum(row["amount_cents"] for row in expense_entries),
             "approval": dict(approval) if approval else None,
@@ -139,7 +169,11 @@ def get_month_report_data(path: str | Path, first_day: date, last_day: date) -> 
             "SELECT date, display_name FROM cook WHERE date BETWEEN ? AND ? ORDER BY date, id",
             bounds,
         ).fetchall()
+        cancelled = connection.execute(
+            "SELECT date FROM cancellation WHERE date BETWEEN ? AND ?", bounds
+        ).fetchall()
         return {
+            "cancelled": {row["date"] for row in cancelled},
             "expenses": [dict(row) for row in expenses],
             "approvals": {row["date"]: dict(row) for row in approvals},
             "cooks": [(row["date"], row["display_name"]) for row in cooks],
@@ -163,18 +197,28 @@ def get_shopping_data(path: str | Path, wednesday_date: date) -> dict:
             "SELECT display_name, diet, note FROM registration WHERE date = ? ORDER BY created_at, id",
             (day,),
         ).fetchall()
+        max_portions = _portion_limit(connection, day)
+        cancelled = connection.execute(
+            "SELECT 1 FROM cancellation WHERE date = ?", (day,)
+        ).fetchone() is not None
     finally:
         connection.close()
+    confirmed = registrations if max_portions is None else registrations[:max_portions]
+    historical = len(confirmed)
+    if cancelled:
+        confirmed = []
     counts = {"alles": 0, "vegetarisch": 0, "vegan": 0}
-    for row in registrations:
+    for row in confirmed:
         counts[row["diet"]] += 1
     return {
+        "cancelled": cancelled,
+        "historical_total": historical,
         "dish_title": dish["dish_title"] if dish else None,
         "dish_type": dish["dish_type"] if dish else None,
-        "total": len(registrations),
+        "total": len(confirmed),
         "counts": counts,
         "notes": [
             {"name": row["display_name"], "note": row["note"]}
-            for row in registrations if row["note"]
+            for row in confirmed if row["note"]
         ],
     }

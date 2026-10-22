@@ -107,5 +107,5 @@ def test_wednesday_summary_is_not_truncated_at_mobile_width(page,e2e_url):
     page.set_viewport_size({'width':375,'height':812})
     page.goto(e2e_url+'/?month=2026-10')
     summaries=page.locator('[data-date="2026-10-28"] .day-detail')
-    assert summaries.count()==3
+    assert summaries.count()==4  # Cooks (incl. S1 status), dish, registrations, S4 status.
     assert summaries.evaluate_all('(nodes) => nodes.every(n => n.scrollWidth <= n.clientWidth)'), 'Wednesday summary text is clipped'

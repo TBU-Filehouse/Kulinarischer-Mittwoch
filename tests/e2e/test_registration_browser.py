@@ -58,7 +58,9 @@ def test_closed_wednesday_shows_registrations_without_forms(page,e2e_url):
     page.goto(e2e_url+'/wednesdays/2026-10-21')
     expect(page.get_by_text('Anmeldung geschlossen',exact=True)).to_be_visible()
     expect(page.get_by_role('button',name='Zum Essen anmelden',exact=True)).to_have_count(0)
-    expect(page.locator('form')).to_have_count(0)
+    # Decision B (ADR-005 addendum): the only form left is the accounting backfill for a missing cook.
+    expect(page.locator('form')).to_have_count(1)
+    expect(page.locator('form.backfill-form')).to_have_count(1)
 
 
 def test_mobile_registration_without_overflow(page,e2e_url):

@@ -5,14 +5,20 @@
   <section class="detail-hero" aria-labelledby="page-title">
     <p class="eyebrow">Unser gemeinsames Essen</p>
     <h1 id="page-title">{{ date_heading }}</h1>
-    <span class="status-pill {{ 'closed' if locked else 'open' }}">{{ 'Anmeldung geschlossen' if locked else 'Anmeldung offen' }}</span>
+    {% if cancelled %}
+      <span class="status-pill cancelled">Abgesagt</span>
+    {% else %}
+      <span class="status-pill {{ 'closed' if locked else 'open' }}">{{ 'Anmeldung geschlossen' if locked else 'Anmeldung offen' }}</span>
+    {% endif %}
   </section>
 
   {% with messages = get_flashed_messages(category_filter=['success']) %}
     {% for message in messages %}<p class="success-message" role="status">{{ message }}</p>{% endfor %}
   {% endwith %}
   {% if error_message %}<p class="form-error" role="alert">{{ error_message }}</p>{% endif %}
-  {% if locked %}<p class="closed-note" role="status">Die Frist ist geschlossen. Koch-, Gerichts- und Anmeldedaten bleiben lesbar; An- und Abmeldungen sind gesperrt.</p>{% endif %}
+  {% if cancelled %}<p id="cancellation-note" class="cancelled-note" role="status">Abgesagt: {{ cancellation_reason }}</p>{% endif %}
+  {% if is_past %}<p class="closed-note past-note" role="status">Vergangener Mittwoch – nur lesbar. Ausgaben können weiterhin erfasst werden.</p>{% endif %}
+  {% if locked and not is_past %}<p class="closed-note" role="status">Die Frist ist geschlossen. Koch-, Gerichts- und Anmeldedaten bleiben lesbar; An- und Abmeldungen sind gesperrt.</p>{% endif %}
 
   <div class="detail-grid">
     <section class="info-card dish-card" aria-labelledby="dish-heading">
@@ -24,7 +30,7 @@
       {% else %}
         <p class="muted">Das Gericht ist noch nicht eingetragen.</p>
       {% endif %}
-      {% if not locked %}
+      {% if can_edit_meal %}
         <form class="write-form dish-form" method="post" action="{{ url_for('calendar.save_dish', day_value=day_value) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <label for="dish-title">Gerichttitel</label>
@@ -50,7 +56,7 @@
           {% for cook in cook_entries %}
             <li>
               <span>{{ cook.display_name }}</span>
-              {% if not locked %}
+              {% if can_edit_meal %}
                 <form class="inline-form" method="post" action="{{ url_for('calendar.remove_cook', day_value=day_value, cook_id=cook.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <button class="secondary-button" type="submit" aria-label="{{ cook.display_name }} als Koch austragen">Austragen</button>
@@ -62,7 +68,8 @@
       {% else %}
         <p class="muted">Für diesen Mittwoch sind noch keine Köche eingetragen.</p>
       {% endif %}
-      {% if not locked %}
+      <p id="cook-status" class="cook-status">{{ cook_status }}</p>
+      {% if can_edit_meal %}
         {% if cook_entries|length >= 2 %}<p class="muted">Alle zwei Kochplätze sind belegt.</p>{% else %}
           <form class="write-form cook-form" method="post" action="{{ url_for('calendar.add_cook', day_value=day_value) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -71,6 +78,14 @@
             <button type="submit">Als Koch eintragen</button>
           </form>
         {% endif %}
+      {% elif locked and not cancelled and cook_entries|length < 2 %}
+        <form class="write-form backfill-form" method="post" action="{{ url_for('calendar.backfill_cook', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <p class="form-hint"><strong>Koch für die Abrechnung nachtragen</strong> – nur damit Ausgaben erfasst werden können. Austragen ist nach dem Anmeldeschluss nicht möglich.</p>
+          <label for="backfill-cook-name">Name des Kochs</label>
+          <input id="backfill-cook-name" name="name" type="text" maxlength="80" required value="{{ form_backfill_name or '' }}">
+          <button type="submit">Koch nachtragen</button>
+        </form>
       {% endif %}
     </section>
 
@@ -78,15 +93,18 @@
       <h2 id="registrations-heading">Essen-Anmeldungen</h2>
       <p class="count-number">{{ registration_count }}</p>
       <p class="muted">{{ 'Person' if registration_count == 1 else 'Personen' }} angemeldet</p>
+      {% if waitlist_count %}<p class="muted">{{ waitlist_count }} auf der Warteliste</p>{% endif %}
+      <p class="muted">Portionen: <span id="portion-limit">{{ portion_limit_label }}</span></p>
       <p class="shopping-link"><a href="{{ url_for('calendar.shopping', day_value=day_value) }}">Einkaufsübersicht</a></p>
       {% if registration_entries %}
         <ul class="registration-list">
           {% for entry in registration_entries %}
-            <li>
+            <li data-registration-status="{{ entry.status }}">
               <span class="registration-name">{{ entry.display_name }}</span>
               <span class="registration-diet">{{ entry.diet_label }}</span>
+              {% if entry.status == 'waitlisted' %}<span class="waitlist-badge">Warteliste {{ entry.waitlist_position }}</span>{% endif %}
               {% if entry.note %}<span class="registration-note">Hinweis: {{ entry.note }}</span>{% endif %}
-              {% if not locked %}
+              {% if can_edit_meal %}
                 <form class="inline-form" method="post" action="{{ url_for('calendar.remove_registration', day_value=day_value, registration_id=entry.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <button class="secondary-button" type="submit" aria-label="{{ entry.display_name }} vom Essen abmelden">Abmelden</button>
@@ -96,7 +114,7 @@
           {% endfor %}
         </ul>
       {% endif %}
-      {% if not locked %}
+      {% if can_edit_meal %}
         <form class="write-form registration-form" method="post" action="{{ url_for('calendar.add_registration', day_value=day_value) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <label for="registration-name">Name für das Essen</label>
@@ -111,6 +129,12 @@
           <label for="registration-note">Allergien/Hinweis (optional)</label>
           <textarea id="registration-note" name="note" maxlength="1000" rows="2">{{ form_note or '' }}</textarea>
           <button type="submit">Zum Essen anmelden</button>
+        </form>
+        <form class="write-form portions-form" method="post" action="{{ url_for('calendar.set_portion_limit', day_value=day_value) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="max-portions">Maximale Portionen</label>
+          <input id="max-portions" name="max_portions" type="text" inputmode="numeric" maxlength="3" value="{{ form_max_portions or '' }}">
+          <button type="submit">Portionen festlegen</button>
         </form>
       {% endif %}
     </section>
@@ -181,6 +205,18 @@
       {% endif %}
       <p><a href="{{ report_url }}">Monatsreport ansehen</a></p>
     </section>
+
+    {% if can_cancel %}
+    <section class="info-card cancel-card" aria-labelledby="cancel-heading">
+      <h2 id="cancel-heading">Mittwoch absagen</h2>
+      <form class="write-form cancel-form" method="post" action="{{ url_for('calendar.cancel_wednesday', day_value=day_value) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label for="cancel-reason">Absagegrund</label>
+        <textarea id="cancel-reason" name="reason" maxlength="1000" required rows="2">{{ form_cancel_reason or '' }}</textarea>
+        <button type="submit">Mittwoch absagen</button>
+      </form>
+    </section>
+    {% endif %}
 
     <section class="info-card deadline-card" aria-labelledby="deadline-heading">
       <h2 id="deadline-heading">Anmeldeschluss</h2>

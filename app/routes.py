@@ -21,7 +21,15 @@ from .rules import (
     is_locked,
     registration_deadline,
 )
-from .services import ExpenseConflictError, NotFoundError, WednesdayService
+from .services import (
+    BackfillNotNeededError,
+    ExpenseConflictError,
+    NotFoundError,
+    PastWednesdayError,
+    PortionLimitError,
+    WednesdayCancelledError,
+    WednesdayService,
+)
 from .csrf import get_csrf_token, validate_csrf_request
 
 
@@ -44,6 +52,25 @@ _DIETS = {
     "vegetarisch": "Vegetarisch",
     "vegan": "Vegan",
 }
+
+
+_COOK_STATUS = ("Köche gesucht", "1 Koch fehlt", "komplett")
+_CALENDAR_STATUS = {
+    "open": "Anmeldung offen",
+    "closed": "Anmeldung geschlossen",
+    "past": "Vergangen",
+    "cancelled": "Abgesagt",
+}
+
+
+def _cook_status(count: int) -> str:
+    return _COOK_STATUS[min(max(count, 0), 2)]
+
+
+def _portion_label(limit: int | None) -> str:
+    if limit is None:
+        return "unbegrenzt"
+    return "1 Portion" if limit == 1 else f"{limit} Portionen"
 
 
 def _local_now():
@@ -83,8 +110,23 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
     approval = details["approval"]
     per_person = cost_per_person_cents(total, details["registration_count"])
     budget_state = budget_status(total, approval["approved_total_cents"] if approval else None)
+    locked = is_locked(now, day)
+    cancelled = details["cancelled"]
+    is_past = day < now.date()
     return render_template(
         "detail.html",
+        cook_status=_cook_status(len(details["cook_entries"])),
+        portion_limit_label=_portion_label(details["max_portions"]),
+        form_max_portions=values.get(
+            "max_portions", "" if details["max_portions"] is None else str(details["max_portions"])
+        ),
+        form_cancel_reason=values.get("cancel_reason", ""),
+        waitlist_count=details["waitlist_count"],
+        cancelled=cancelled,
+        cancellation_reason=details["cancellation_reason"],
+        is_past=is_past,
+        can_edit_meal=not locked and not cancelled,
+        can_cancel=not cancelled and not is_past,
         budget_total=format_euro(BUDGET_CENTS),
         expense_sum=format_euro(total),
         budget_remaining=format_euro(BUDGET_CENTS - total),
@@ -116,6 +158,7 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
         cooks=details["cooks"],
         cook_entries=details["cook_entries"],
         form_cook_name=values.get("name", ""),
+        form_backfill_name=values.get("backfill_name", ""),
         registration_count=details["registration_count"],
         registration_entries=[
             {**entry, "diet_label": _DIETS[entry["diet"]]}
@@ -130,7 +173,7 @@ def _detail_page(day: date, status: int = 200, error_message: str | None = None,
         deadline_heading=(
             f"Dienstag, {deadline.day:02d}.{deadline.month:02d}.{deadline.year:04d} um 12:00 Uhr"
         ),
-        locked=is_locked(now, day),
+        locked=locked,
     ), status
 
 
@@ -206,6 +249,14 @@ def index():
             iso_day = day.isoformat()
             data = entries.get(iso_day, {})
             is_wednesday = day.weekday() == 2
+            if data.get("cancelled"):
+                cell_status = "cancelled"
+            elif day < today:
+                cell_status = "past"
+            elif is_wednesday and is_locked(now, day):
+                cell_status = "closed"
+            else:
+                cell_status = "open"
             cells.append({
                 "day": day_number,
                 "iso": iso_day,
@@ -215,6 +266,9 @@ def index():
                 "cooks": data.get("cooks", []),
                 "dish_title": data.get("dish_title"),
                 "registration_count": data.get("registration_count", 0),
+                "status": cell_status,
+                "status_label": _CALENDAR_STATUS[cell_status],
+                "cook_status": _cook_status(len(data.get("cooks", []))),
             })
         month_grid.append(cells)
 
@@ -266,6 +320,8 @@ def shopping(day_value: str):
         total=data["total"],
         diet_rows=[(key, _DIETS[key], data["counts"][key]) for key in ("alles", "vegetarisch", "vegan")],
         notes=data["notes"],
+        cancelled=data["cancelled"],
+        historical_total=data["historical_total"],
     )
 
 
@@ -281,9 +337,31 @@ def add_cook(day_value: str):
         WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).add_cook(day, name)
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, DuplicateNameError, CookLimitError, RegistrationClosedError) as exc:
+    except (InvalidInputError, DuplicateNameError, CookLimitError, RegistrationClosedError,
+            WednesdayCancelledError) as exc:
         return _write_error(day, exc, {"name": name})
     flash("Der Koch wurde eingetragen.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/cooks/backfill")
+def backfill_cook(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    name = request.form.get("name", "")
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).add_cook(
+            day, name, backfill=True
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, DuplicateNameError, CookLimitError, BackfillNotNeededError,
+            WednesdayCancelledError) as exc:
+        return _write_error(day, exc, {"backfill_name": name})
+    flash("Der Koch wurde für die Abrechnung nachgetragen.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
 
 
@@ -298,7 +376,8 @@ def remove_cook(day_value: str, cook_id: int):
         WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).remove_cook(day, cook_id)
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, RegistrationClosedError, NotFoundError, ExpenseConflictError) as exc:
+    except (InvalidInputError, RegistrationClosedError, NotFoundError, ExpenseConflictError,
+            WednesdayCancelledError) as exc:
         return _write_error(day, exc)
     flash("Der Koch wurde ausgetragen.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
@@ -322,7 +401,7 @@ def add_registration(day_value: str):
         )
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, DuplicateNameError, RegistrationClosedError) as exc:
+    except (InvalidInputError, DuplicateNameError, RegistrationClosedError, WednesdayCancelledError) as exc:
         return _write_error(day, exc, values)
     flash("Die Essen-Anmeldung wurde gespeichert.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
@@ -341,7 +420,7 @@ def remove_registration(day_value: str, registration_id: int):
         )
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, RegistrationClosedError, NotFoundError) as exc:
+    except (InvalidInputError, RegistrationClosedError, NotFoundError, WednesdayCancelledError) as exc:
         return _write_error(day, exc)
     flash("Die Essen-Anmeldung wurde entfernt.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
@@ -365,9 +444,50 @@ def save_dish(day_value: str):
         )
     except sqlite3.Error:
         return _database_error()
-    except (InvalidInputError, RegistrationClosedError) as exc:
+    except (InvalidInputError, RegistrationClosedError, WednesdayCancelledError) as exc:
         return _write_error(day, exc, values)
     flash("Das Gericht wurde gespeichert.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/portions")
+def set_portion_limit(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {"max_portions": request.form.get("max_portions", "")}
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).set_portion_limit(
+            day, values["max_portions"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, RegistrationClosedError, WednesdayCancelledError,
+            PastWednesdayError, PortionLimitError) as exc:
+        return _write_error(day, exc, values)
+    flash("Das Portionslimit wurde gespeichert.", "success")
+    return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
+
+
+@calendar_blueprint.post("/wednesdays/<day_value>/cancel")
+def cancel_wednesday(day_value: str):
+    validate_csrf_request()
+    try:
+        day = _parse_wednesday(day_value)
+    except ValueError:
+        return _bad_request("Bitte geben Sie ein gültiges Mittwoch-Datum im Format JJJJ-MM-TT an.")
+    values = {"cancel_reason": request.form.get("reason", "")}
+    try:
+        WednesdayService(current_app.config["DATABASE"], current_app.config["CLOCK"]).cancel_wednesday(
+            day, values["cancel_reason"]
+        )
+    except sqlite3.Error:
+        return _database_error()
+    except (InvalidInputError, WednesdayCancelledError, PastWednesdayError) as exc:
+        return _write_error(day, exc, values)
+    flash("Der Mittwoch wurde abgesagt.", "success")
     return redirect(url_for("calendar.wednesday_detail", day_value=day.isoformat()), code=303)
 
 
@@ -503,6 +623,7 @@ def monthly_report(month_value: str):
                 "over": format_euro(total - BUDGET_CENTS) if total > BUDGET_CENTS else None,
                 "status": {"Im Budget": "Im Budget",
                            "Budget überschritten, genehmigt": "genehmigt"}.get(status, "nicht genehmigt"),
+                "cancelled": iso in data["cancelled"],
                 "unapproved": status == "Budget überschritten, nicht genehmigt",
                 "link": url_for("calendar.wednesday_detail", day_value=iso),
             })

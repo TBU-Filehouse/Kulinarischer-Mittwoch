@@ -41,10 +41,12 @@
                 {% if cell is none %}
                   <td class="empty-day" aria-hidden="true"></td>
                 {% elif cell.wednesday %}
-                  <td class="calendar-day wednesday" data-date="{{ cell.iso }}">
+                  <td class="calendar-day wednesday" data-date="{{ cell.iso }}" data-status="{{ cell.status }}">
                     <a class="day-link" href="{{ cell.link }}" aria-label="Mittwoch, {{ '%02d'|format(cell.day) }}.{{ '%02d'|format(month) }}.{{ '%04d'|format(year) }}">
                       <span class="day-number">{{ cell.day }}</span>
                       <span class="day-name">Mittwoch</span>
+                      <span class="day-status status-{{ cell.status }}">{{ cell.status_label }}</span>
+                      <span class="day-detail cook-status">{{ cell.cook_status }}</span>
                       <span class="day-detail"><strong>Köche</strong> {{ cell.cooks | join(', ') if cell.cooks else 'Noch offen' }}</span>
                       <span class="day-detail"><strong>Gericht</strong> {{ cell.dish_title or 'Noch offen' }}</span>
                       <span class="day-detail"><strong>Anmeldungen</strong> {{ cell.registration_count }}</span>

@@ -72,3 +72,6 @@ Gesamtprobe mit echtem Prozessneustart und Anforderungs-/Abnahmematrix (docs/15-
 
 ## Umsetzungsstand AP8 — 22.10.2026
 Abgabestand: README-Start in sauberem Ordner geprüft, Checkliste als Abnahmeprotokoll vorbereitet, README neu gegliedert (docs/16-ap8-abgabe.md). AP1–AP8 und Änderung 1 technisch abgeschlossen. **Offen: fachliche Abnahme durch eine Person, Excel-Doppelklick.** SOLL S1–S4 nicht gebaut.
+
+## Umsetzungsstand SOLL — 22.10.2026
+S1–S4 gebaut (ADR-008), Abrechnungslücke mit Entscheidung B geschlossen (ADR-005 Nachtrag). Nachweis docs/17-soll-qs.md, 298 Tests grün (269 Logik/HTTP, 29 Chromium). Der Nutzer hat den MUSS-Umfang mündlich als funktionierend gemeldet; die Checkliste inklusive SOLL füllt der Nutzer aus. Nicht committet.

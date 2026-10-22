@@ -134,9 +134,9 @@ def test_deadline_allows_one_second_before_and_blocks_direct_posts_at_cutoff(wri
         assert client.post(f'/wednesdays/{day}/registrations/{expected[0][0]}/remove',
                            data={'csrf_token':token}).status_code==409
         html=client.get('/wednesdays/'+day).get_data(as_text=True)
-        parser=TokenParser()
-        parser.feed(html)
-        assert parser.token is None  # No write form after the deadline.
+        # No meal write form after the deadline; cancelling stays possible (ADR-003/ADR-008).
+        for suffix in ('cooks','dish','registrations','portions',f'registrations/{expected[0][0]}/remove'):
+            assert f'action="/wednesdays/{day}/{suffix}"' not in html
         assert 'Anmeldung geschlossen' in html and 'Anna' in html
     assert rows(app,'registration')==expected
 

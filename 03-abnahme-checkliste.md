@@ -32,8 +32,15 @@ Auf einem Mittwoch mit Anna Müller und Ben Muster als Köchen und vier Essen-An
 | A4 | Im Kalender „Monatsreport“ öffnen | Alle Mittwoche des Monats, Summe 324,05 €, Erstattung Anna 35,95 € · Ben 288,10 €; vor der Genehmigung „nicht genehmigt“ markiert | | [ ] |
 | A5 | „CSV herunterladen“, Datei **per Doppelklick in Excel** öffnen | Kopfzeile plus **4 Datenzeilen** (Excel zeigt 5 Zeilen), 5 Spalten sauber getrennt, „Brot; Butter“ in einer Zelle, Umlaute korrekt, Beträge mit Komma | | [ ] |
 
-## SOLL (nicht gebaut — nicht abhaken)
-S1 Kochstatus, S2 Warteliste, S3 Absage, S4 Historie-Sperre sind nicht umgesetzt. S5 (375 px) ist automatisch für Kalender, Formulare, Einkauf und Report geprüft; bei Bedarf am Handy oder in den Entwicklertools gegenprüfen: [ ] S5
+## SOLL (gebaut und technisch geprüft, siehe docs/17-soll-qs.md)
+| Fall | Durchführen | Erwartet | Ist / Datum / Person | OK |
+|---|---|---|---|---|
+| A-S1 | Offenen Mittwoch ohne Koch öffnen, dann 1 und 2 Köche eintragen; Kalender ansehen | „Köche gesucht“ → „1 Koch fehlt“ → „komplett“, auch in der Kalenderzelle | | [ ] |
+| A-S2 | „Maximale Portionen“ 2 festlegen, drei Personen anmelden; eine bestätigte abmelden; Limit auf 1 senken versuchen | Dritte Person „Warteliste 1“, Zahl 2; nach Abmeldung rückt sie nach; Senken unter die Bestätigten abgewiesen; Einkauf zählt nur Bestätigte | | [ ] |
+| A-S3 | Mittwoch mit Grund absagen; danach Koch/Anmeldung versuchen; Einkaufsübersicht | „Abgesagt“ mit Grund, keine Planungsformulare, Daten sichtbar; Einkauf aktiv 0, „Vor der Absage angemeldet“ separat; Ausgaben weiter möglich | | [ ] |
+| A-S4 | Vergangenen Mittwoch und Kalender ansehen | Hinweis „Vergangener Mittwoch“, keine Planungsformulare; Kalender zeigt „Vergangen“, „Anmeldung offen/geschlossen“, „Abgesagt“ | | [ ] |
+| A-S5 | Kalender, Detail, Einkauf, Report bei 375 px Breite (Handy oder Entwicklertools) | Alles bedienbar, keine abgeschnittenen Aktionen | | [ ] |
+| A-B | Vergangener Mittwoch ohne Koch: „Koch nachtragen“, dann Ausgabe erfassen; Austragen versuchen | Koch nachgetragen, Ausgabe möglich; kein Austragen-Knopf; dritter Koch abgewiesen | | [ ] |
 
 ## Abgabe
 | Fall | Stand 22.10.2026 | OK |

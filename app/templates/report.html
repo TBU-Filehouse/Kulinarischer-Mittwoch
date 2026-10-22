@@ -24,7 +24,7 @@
               <td data-label="Ausgaben">{{ row.total }}</td>
               <td data-label="Budget">{{ row.budget }}</td>
               <td data-label="Überschreitung">{{ row.over or '–' }}</td>
-              <td data-label="Status">{{ row.status }}</td>
+              <td data-label="Status">{% if row.cancelled %}abgesagt · {% endif %}{{ row.status }}</td>
             </tr>
           {% endfor %}
         </tbody>

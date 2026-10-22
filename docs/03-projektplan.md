@@ -121,3 +121,6 @@ AP7 umgesetzt: Gesamtprobe mit echtem Neustart von `python -m app`, Matrix in [1
 
 ## Fortschritt — 22.10.2026, nach AP8
 AP8 umgesetzt: [Nachweis](16-ap8-abgabe.md). **MS4 technisch erreicht.** Offen bleiben die fachliche Abnahme (Checkliste) und der Excel-Doppelklick. SOLL-Backlog S1–S5 erst nach Abnahme und nur auf Auftrag.
+
+## Fortschritt — 22.10.2026, SOLL
+S1–S4 und Entscheidung B umgesetzt: [Nachweis](17-soll-qs.md). Offen: S5 als manuelle Prüfung, fachliche Abnahme, Excel-Doppelklick. Could-Umfang nur auf Auftrag.

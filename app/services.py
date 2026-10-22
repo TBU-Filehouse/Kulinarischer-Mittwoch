@@ -4,6 +4,7 @@ import re
 import sqlite3
 from datetime import date
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from datetime import timezone
 
@@ -18,6 +19,7 @@ from .rules import (
     ensure_cook_slot,
     ensure_name_available,
     ensure_open,
+    is_locked,
     normalize_name,
     validate_wednesday,
 )
@@ -29,6 +31,38 @@ class NotFoundError(LookupError):
 
 class ExpenseConflictError(RuleViolation):
     """The operation conflicts with existing expenses or the budget state."""
+
+
+class WednesdayCancelledError(RuleViolation):
+    """The Wednesday has been cancelled; meal planning is frozen."""
+
+
+class PastWednesdayError(RuleViolation):
+    """The Wednesday lies in the past and is read-only history."""
+
+
+class BackfillNotNeededError(RuleViolation):
+    """Before the deadline, cooks use the normal registration instead of the backfill."""
+
+
+class PortionLimitError(RuleViolation):
+    """The new portion limit would drop people who are already confirmed."""
+
+
+_BERLIN = ZoneInfo("Europe/Berlin")
+_LIMIT_PATTERN = re.compile(r"[0-9]{1,3}", re.ASCII)
+
+
+def _ensure_not_past(now, day: date) -> None:
+    if day < now.astimezone(_BERLIN).date():
+        raise PastWednesdayError("Dieser Mittwoch liegt in der Vergangenheit und ist nur noch lesbar.")
+
+
+def _ensure_not_cancelled(connection: sqlite3.Connection, day: date) -> None:
+    if connection.execute(
+        "SELECT 1 FROM cancellation WHERE date = ?", (day.isoformat(),)
+    ).fetchone() is not None:
+        raise WednesdayCancelledError("Dieser Mittwoch wurde abgesagt; Änderungen sind nicht mehr möglich.")
 
 
 _DISH_TYPES = frozenset({"vegan", "vegetarisch", "fleisch_fisch"})
@@ -43,7 +77,8 @@ class WednesdayService:
         self.database_path = database_path
         self.clock = clock
 
-    def add_cook(self, day: date, display_name: str) -> int:
+    def add_cook(self, day: date, display_name: str, backfill: bool = False) -> int:
+        """Add a cook; ``backfill`` adds a missing cook after the deadline for accounting only (ADR-005)."""
         normalized_name = normalize_name(display_name)
         trimmed_name = display_name.strip()
         connection = connect_database(self.database_path)
@@ -51,7 +86,11 @@ class WednesdayService:
             connection.execute("BEGIN IMMEDIATE")
             now = self.clock.now()
             valid_day = validate_wednesday(day)
-            ensure_open(now, valid_day)
+            if not backfill:
+                ensure_open(now, valid_day)
+            elif not is_locked(now, valid_day):
+                raise BackfillNotNeededError("Vor dem Anmeldeschluss bitte das normale Formular zum Eintragen nutzen.")
+            _ensure_not_cancelled(connection, valid_day)
             existing = connection.execute(
                 "SELECT display_name FROM cook WHERE date = ? ORDER BY id",
                 (valid_day.isoformat(),),
@@ -88,6 +127,7 @@ class WednesdayService:
             now = self.clock.now()
             valid_day = validate_wednesday(day)
             ensure_open(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
             row = connection.execute(
                 "SELECT id FROM cook WHERE id = ? AND date = ?",
                 (cook_id, valid_day.isoformat()),
@@ -126,6 +166,7 @@ class WednesdayService:
             now = self.clock.now()
             valid_day = validate_wednesday(day)
             ensure_open(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
             existing = connection.execute(
                 "SELECT display_name FROM registration WHERE date = ? ORDER BY id",
                 (valid_day.isoformat(),),
@@ -165,6 +206,7 @@ class WednesdayService:
             now = self.clock.now()
             valid_day = validate_wednesday(day)
             ensure_open(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
             deleted = connection.execute(
                 "DELETE FROM registration WHERE id = ? AND date = ?",
                 (registration_id, valid_day.isoformat()),
@@ -193,6 +235,7 @@ class WednesdayService:
             now = self.clock.now()
             valid_day = validate_wednesday(day)
             ensure_open(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
             connection.execute(
                 """INSERT INTO wednesday(date, dish_title, dish_description, dish_type)
                    VALUES(?, ?, ?, ?)
@@ -206,6 +249,85 @@ class WednesdayService:
         except sqlite3.IntegrityError as exc:
             connection.rollback()
             raise InvalidInputError("Das Gericht konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def set_portion_limit(self, day: date, raw_value: str) -> None:
+        """Set or clear (blank) the portion limit; waitlist positions are derived."""
+        if not isinstance(raw_value, str):
+            raise InvalidInputError("Das Portionslimit muss Text sein.")
+        value = raw_value.strip()
+        limit = None
+        if value:
+            if not _LIMIT_PATTERN.fullmatch(value) or not 1 <= int(value) <= 999:
+                raise InvalidInputError("Das Portionslimit muss eine ganze Zahl von 1 bis 999 sein.")
+            limit = int(value)
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            now = self.clock.now()
+            valid_day = validate_wednesday(day)
+            iso = valid_day.isoformat()
+            _ensure_not_past(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
+            ensure_open(now, valid_day)
+            if limit is None:
+                connection.execute("DELETE FROM portion_limit WHERE date = ?", (iso,))
+            else:
+                total = connection.execute(
+                    "SELECT COUNT(*) FROM registration WHERE date = ?", (iso,)
+                ).fetchone()[0]
+                current = connection.execute(
+                    "SELECT max_portions FROM portion_limit WHERE date = ?", (iso,)
+                ).fetchone()
+                confirmed = total if current is None else min(total, current["max_portions"])
+                if limit < confirmed:
+                    raise PortionLimitError(
+                        f"Das Limit kann nicht unter die Zahl der bestätigten Anmeldungen ({confirmed}) gesenkt werden."
+                    )
+                connection.execute("INSERT OR IGNORE INTO wednesday(date) VALUES(?)", (iso,))
+                connection.execute(
+                    """INSERT INTO portion_limit(date, max_portions) VALUES(?, ?)
+                       ON CONFLICT(date) DO UPDATE SET max_portions = excluded.max_portions""",
+                    (iso, limit),
+                )
+            connection.commit()
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise InvalidInputError("Das Limit konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def cancel_wednesday(self, day: date, reason: str) -> None:
+        """Cancel a Wednesday for good; data stays, meal changes are frozen."""
+        if not isinstance(reason, str) or not 1 <= len(reason.replace("\r\n", "\n").strip()) <= 1000:
+            raise InvalidInputError("Der Absagegrund muss nach dem Kürzen 1 bis 1000 Zeichen haben.")
+        trimmed = reason.replace("\r\n", "\n").strip()
+        connection = connect_database(self.database_path)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            now = self.clock.now()
+            valid_day = validate_wednesday(day)
+            _ensure_not_past(now, valid_day)
+            _ensure_not_cancelled(connection, valid_day)
+            cancelled_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            connection.execute(
+                "INSERT OR IGNORE INTO wednesday(date) VALUES(?)", (valid_day.isoformat(),)
+            )
+            connection.execute(
+                "INSERT INTO cancellation(date, reason, cancelled_at) VALUES(?, ?, ?)",
+                (valid_day.isoformat(), trimmed, cancelled_at),
+            )
+            connection.commit()
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise InvalidInputError("Die Absage konnte wegen eines Datenkonflikts nicht gespeichert werden.") from exc
         except BaseException:
             connection.rollback()
             raise

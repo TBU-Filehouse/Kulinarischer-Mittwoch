@@ -10,13 +10,18 @@
     {% else %}
       <p class="muted">Das Gericht ist noch nicht eingetragen.</p>
     {% endif %}
+    {% if cancelled %}<p class="cancelled-note">Dieser Mittwoch ist abgesagt.</p>{% endif %}
   </section>
 
   <div class="detail-grid">
     <section class="info-card count-card" aria-labelledby="shopping-total-heading">
       <h2 id="shopping-total-heading">Personen gesamt</h2>
       <p class="count-number" id="shopping-total">{{ total }}</p>
-      <p class="muted">Nur Essen-Anmeldungen zählen; Köche ohne eigene Anmeldung nicht.</p>
+      <p class="muted">Nur bestätigte Essen-Anmeldungen zählen; Köche ohne eigene Anmeldung und Wartende nicht.</p>
+      {% if cancelled %}
+        <p class="muted">Vor der Absage angemeldet:</p>
+        <p class="count-number historical" id="shopping-historical">{{ historical_total }}</p>
+      {% endif %}
     </section>
 
     <section class="info-card" aria-labelledby="shopping-diet-heading">

@@ -43,3 +43,14 @@ CREATE TABLE IF NOT EXISTS budget_approval (
     approved_total_cents INTEGER NOT NULL,
     approved_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS portion_limit (
+    date TEXT PRIMARY KEY NOT NULL REFERENCES wednesday(date),
+    max_portions INTEGER NOT NULL CHECK (max_portions BETWEEN 1 AND 999)
+);
+
+CREATE TABLE IF NOT EXISTS cancellation (
+    date TEXT PRIMARY KEY NOT NULL REFERENCES wednesday(date),
+    reason TEXT NOT NULL,
+    cancelled_at TEXT NOT NULL
+);

@@ -55,7 +55,9 @@ def test_save_edit_dish_and_see_month_summary(page,e2e_url,kind,label):
 def test_closed_wednesday_has_no_write_form(page,e2e_url):
     page.goto(e2e_url+'/wednesdays/2026-10-21')
     expect(page.get_by_text('Anmeldung geschlossen',exact=True)).to_be_visible()
-    expect(page.locator('form')).to_have_count(0)
+    # Decision B (ADR-005 addendum): the only form left is the accounting backfill for a missing cook.
+    expect(page.locator('form')).to_have_count(1)
+    expect(page.locator('form.backfill-form')).to_have_count(1)
     expect(page.get_by_role('button',name='Gericht speichern',exact=True)).to_have_count(0)
 
 

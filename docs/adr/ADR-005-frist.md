@@ -12,3 +12,9 @@ Köche unbegrenzt ändern lassen verworfen: Einkauf und Verantwortung könnten n
 
 ## Konsequenzen
 Vorhersehbarer eingefrorener Plan; spätere reale Kochabsagen brauchen bei implementiertem S3 eine Terminabsage. Direkte Serveranfragen müssen dieselbe Sperre einhalten. Uhrzeit als zoniertes Kalenderdatum berechnen, nie mit festem UTC-Offset.
+
+## Nachtrag 22.10.2026 — Koch für die Abrechnung nachtragen (Entscheidung B)
+Anlass: Der Nutzertest zeigte, dass ein Mittwoch ohne rechtzeitig eingetragenen Koch nie abgerechnet werden kann, weil Ausgaben einen Koch des Mittwochs verlangen (Änderung 1, A2) und diese ADR Köche nach der Frist sperrt. Die Aufgabenblätter selbst sperren nach der Frist nur die Essen-An-/Abmeldung (M6); die Kochfrist ist eine Projektentscheidung.
+Entscheidung (nach Abwägung gegen eine reine Hinweis-Lösung vom Nutzer bestätigt): Ein eigener Weg `POST /wednesdays/{date}/cooks/backfill` erlaubt **nach** der Frist, auch an vergangenen Mittwochen, **nur das Hinzufügen** eines fehlenden Kochs. Höchstens zwei Köche, Doppelnamen verboten, Austragen bleibt gesperrt, abgesagte Mittwoche bleiben gesperrt, vor der Frist wird der Weg abgewiesen. Die normale Koch-Eintragung bleibt nach der Frist gesperrt.
+Warum das den Zweck dieser ADR nicht schwächt: Geschützt war die Planungssicherheit des Einkaufs. Nachtragen kann nichts wegbrechen lassen, und Köche zählen nicht als Essende (ADR-002); die Einkaufszahlen bleiben unverändert (Test).
+Verworfen: reine Hinweis-Lösung (Lücke bliebe, Belege gingen wieder per Mail); freier Name bei „ausgelegt von“ (verletzt A2); Kochfrist allgemein aufheben (lockert mehr als nötig).
